@@ -81,6 +81,24 @@ def _obv_trend(hist: pd.DataFrame) -> str | None:
         return None
 
 
+def _cvar(closes: pd.Series, q: float = 0.05) -> float | None:
+    """Conditional Value-at-Risk / expected shortfall (FinCon arXiv 2407.06567
+    within-episode risk control): the average DAILY return in the worst q% of
+    days — a downside TAIL-risk measure that ATR (symmetric vol) misses.
+    Returned as a fraction (e.g. -0.045 = on the worst 5% of days, ~-4.5%)."""
+    try:
+        rets = closes.pct_change().dropna()
+        if len(rets) < 20:
+            return None
+        cutoff = rets.quantile(q)
+        tail = rets[rets <= cutoff]
+        if len(tail) == 0:
+            return None
+        return round(float(tail.mean()), 4)
+    except Exception:
+        return None
+
+
 def compute_levels(ticker: str) -> dict | None:
     """Deterministic price/technical snapshot. Returns None if no data."""
     try:
@@ -111,6 +129,7 @@ def compute_levels(ticker: str) -> dict | None:
             "ma200": _ma(200),
             "adx14": _adx(hist),
             "obv_trend": _obv_trend(hist),
+            "cvar5": _cvar(close),
         }
     except Exception:
         return None
@@ -177,6 +196,9 @@ def levels_text(levels: dict) -> str:
         f"- 60d low / high: ${levels['low_60d']} / ${levels['high_60d']}\n"
         f"- MA20 / MA50 / MA200: {levels['ma20']} / {levels['ma50']} / {levels['ma200']}\n"
         f"- ADX(14): {levels.get('adx14')} (>25 = strong trend) · OBV trend: {levels.get('obv_trend')}\n"
+        + (f"- CVaR(5%): {levels['cvar5']:.1%} daily tail-loss — if severe (worse than "
+           "-4%), treat downside as high: tighten stops / size down / prefer HOLD.\n"
+           if levels.get("cvar5") is not None else "")
     )
 
 
