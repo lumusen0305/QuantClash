@@ -154,6 +154,14 @@ class PairsRequest(BaseModel):
     top: int = 10
 
 
+@router.get("/sectors")
+async def sectors_rotation():
+    """Sector-rotation screener: SPDR sectors ranked by momentum + risk-on/off tilt."""
+    from app.data.sectors import sector_rotation
+    loop = asyncio.get_event_loop()
+    return await loop.run_in_executor(None, sector_rotation)
+
+
 @router.post("/pairs")
 async def pairs_screen(req: PairsRequest):
     """Statistical-arbitrage screener: correlated pairs with a stretched spread."""
