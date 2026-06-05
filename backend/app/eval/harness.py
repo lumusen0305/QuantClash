@@ -172,6 +172,15 @@ def score(label: str, cost_bps: float = 10.0) -> dict:
     hit_rate = (wins / directional) if directional else None
     avg_conf = (conf_sum / conf_n) if conf_n else None
     strat_net = (sum(net_returns) / len(net_returns)) if net_returns else None
+    # Dispersion across positions — a single-window mean can be a fluke driven by
+    # one name; std + return/risk make robustness visible (Reliable-Eval §4.6 #3).
+    strat_std = None
+    return_over_risk = None
+    if len(net_returns) >= 2:
+        import statistics as _st
+        strat_std = _st.pstdev(net_returns)
+        if strat_std > 0:
+            return_over_risk = strat_net / strat_std
     # Buy-and-hold baseline of the analyzed names (equal weight) — the bar from
     # StockBench (arXiv 2510.02209): most LLM agents fail to beat it.
     buy_hold = (sum(bh_by_ticker.values()) / len(bh_by_ticker)) if bh_by_ticker else None
@@ -186,6 +195,8 @@ def score(label: str, cost_bps: float = 10.0) -> dict:
                             if (avg_conf is not None and hit_rate is not None) else None,
         "avg_fwd_return_buys": round(sum(fwd_buys) / len(fwd_buys), 4) if fwd_buys else None,
         "strategy_return": round(strat_net, 4) if strat_net is not None else None,
+        "strategy_return_std": round(strat_std, 4) if strat_std is not None else None,
+        "return_over_risk": round(return_over_risk, 3) if return_over_risk is not None else None,
         "strategy_return_gross": round(sum(gross_returns) / len(gross_returns), 4) if gross_returns else None,
         "buy_hold_return": round(buy_hold, 4) if buy_hold is not None else None,
         "excess_vs_buyhold": round(excess, 4) if excess is not None else None,
