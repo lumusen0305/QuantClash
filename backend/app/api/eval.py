@@ -95,6 +95,15 @@ async def eval_compare(a: str, b: str):
     return await loop.run_in_executor(None, lambda: harness.compare(a, b))
 
 
+@router.get("/aggregate")
+async def eval_aggregate(labels: str):
+    """Rolling-window robustness across comma-separated labels (e.g.
+    ?labels=bl_2026-03-08,bl_2026-04-08,bl_2026-05-08)."""
+    labs = [x.strip() for x in labels.split(",") if x.strip()]
+    loop = asyncio.get_event_loop()
+    return await loop.run_in_executor(None, lambda: harness.aggregate(labs))
+
+
 @router.get("/labels")
 async def eval_labels():
     harness._init_db()

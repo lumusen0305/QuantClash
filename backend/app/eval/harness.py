@@ -237,3 +237,35 @@ def compare(label_a: str, label_b: str) -> dict:
             "calibration_gap": _better("calibration_gap", higher=False),  # lower is better
         },
     }
+
+
+def aggregate(labels: list) -> dict:
+    """Rolling-window robustness (Reliable-Eval arXiv 2603.27539 §4.6 #3):
+    aggregate the same strategy scored across multiple non-overlapping window
+    labels into mean ± std of the key metrics, plus how many windows beat
+    buy-and-hold. A strategy that only wins in one window is not robust."""
+    import statistics as _st
+    scored = [score(l) for l in labels]
+    usable = [s for s in scored if s.get("directional")]
+    if not usable:
+        return {"labels": labels, "windows": len(scored), "note": "no directional decisions in any window"}
+
+    def _ms(key):
+        vals = [s[key] for s in usable if isinstance(s.get(key), (int, float))]
+        if not vals:
+            return {"mean": None, "std": None, "n": 0}
+        return {"mean": round(sum(vals) / len(vals), 4),
+                "std": round(_st.pstdev(vals), 4) if len(vals) > 1 else 0.0,
+                "n": len(vals)}
+
+    beats = sum(1 for s in usable if s.get("beats_buy_hold") is True)
+    return {
+        "labels": labels,
+        "windows": len(usable),
+        "hit_rate": _ms("hit_rate"),
+        "strategy_return": _ms("strategy_return"),
+        "excess_vs_buyhold": _ms("excess_vs_buyhold"),
+        "calibration_gap": _ms("calibration_gap"),
+        "beats_buy_hold_windows": f"{beats}/{len(usable)}",
+        "robust": beats == len(usable) and len(usable) >= 2,  # beat BH in EVERY window
+    }
