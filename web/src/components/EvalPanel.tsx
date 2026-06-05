@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { fetchEvalLabels, fetchEvalScore, type EvalScore } from '../api/client';
+import { fetchEvalLabels, fetchEvalScore, fetchEvalCompare, type EvalScore } from '../api/client';
 
 // Compact strategy-evaluation panel: pick a recorded config label and see how
 // its decisions performed on realized forward returns (net-of-cost, vs buy-hold,
@@ -14,6 +14,8 @@ export function EvalPanel() {
   const [score, setScore] = useState<EvalScore | null>(null);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [selB, setSelB] = useState<string>('');
+  const [cmp, setCmp] = useState<Record<string, string | null> | null>(null);
 
   useEffect(() => {
     fetchEvalLabels().then((l) => {
@@ -33,17 +35,44 @@ export function EvalPanel() {
 
   useEffect(() => { if (sel) run(sel); }, [sel, run]);
 
+  // A/B compare when a second label is chosen
+  useEffect(() => {
+    if (sel && selB && sel !== selB) {
+      fetchEvalCompare(sel, selB).then((c) => setCmp(c.better)).catch(() => setCmp(null));
+    } else {
+      setCmp(null);
+    }
+  }, [sel, selB]);
+
   const beat = score?.beats_buy_hold;
   return (
     <div style={{ border: '1px solid var(--border)', borderRadius: 10, padding: 14, marginTop: 12 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
         <strong style={{ fontSize: 14 }}>Strategy Eval (forward-return backtest)</strong>
-        <select value={sel} onChange={(e) => setSel(e.target.value)}
-          style={{ padding: '5px 8px', borderRadius: 6, background: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: '1px solid var(--border)' }}>
-          {labels.length === 0 && <option value="">no eval data yet</option>}
-          {labels.map((l) => <option key={l.label} value={l.label}>{l.label} ({l.count})</option>)}
-        </select>
+        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+          <select value={sel} onChange={(e) => setSel(e.target.value)}
+            style={{ padding: '5px 8px', borderRadius: 6, background: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: '1px solid var(--border)' }}>
+            {labels.length === 0 && <option value="">no eval data yet</option>}
+            {labels.map((l) => <option key={l.label} value={l.label}>{l.label} ({l.count})</option>)}
+          </select>
+          <span style={{ color: 'var(--text-secondary)', fontSize: 12 }}>vs</span>
+          <select value={selB} onChange={(e) => setSelB(e.target.value)}
+            style={{ padding: '5px 8px', borderRadius: 6, background: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: '1px solid var(--border)' }}>
+            <option value="">— (single)</option>
+            {labels.map((l) => <option key={l.label} value={l.label}>{l.label}</option>)}
+          </select>
+        </div>
       </div>
+      {cmp && (
+        <div style={{ marginBottom: 8, padding: 8, background: 'var(--bg-tertiary)', borderRadius: 6, fontSize: 12 }}>
+          <strong>{sel} vs {selB} — winner per metric:</strong>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginTop: 4 }}>
+            {Object.entries(cmp).map(([k, v]) => (
+              <span key={k}><span style={{ color: 'var(--text-secondary)' }}>{k}:</span> <strong>{v ?? '—'}</strong></span>
+            ))}
+          </div>
+        </div>
+      )}
       {err && <div style={{ color: 'var(--danger,#dc2626)', fontSize: 12 }}>{err}</div>}
       {loading && <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>scoring…</div>}
       {score && !loading && (
