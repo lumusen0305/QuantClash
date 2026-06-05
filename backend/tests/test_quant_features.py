@@ -106,10 +106,31 @@ def test_correlation_dampening():
     check("uncorrelated name weighted higher", wts["C"] > wts["A"])
 
 
+def test_apply_cap():
+    from app.data.portfolio_builder import _apply_cap
+    # two names want 0.45 each (sum 0.9), cap 0.30 of total → both capped, excess to cash
+    w = _apply_cap({"A": 0.45, "B": 0.45}, 0.30, 0.9)
+    check("apply_cap caps each <=0.30", all(v <= 0.3001 for v in w.values()))
+    # one over, one with room → excess redistributes, total preserved
+    w2 = _apply_cap({"A": 0.5, "B": 0.1}, 0.30, 0.6)
+    check("apply_cap redistributes (total~0.6)", abs(sum(w2.values()) - 0.6) < 0.01)
+    check("apply_cap A capped", w2["A"] <= 0.3001)
+
+
+def test_cvar():
+    import pandas as pd
+    from app.agents.pricing_tools import _cvar
+    # mostly flat with a few sharp down days → CVaR(5%) should be clearly negative
+    prices = [100, 101, 100, 102, 95, 103, 104, 90, 105, 106, 107, 108,
+              109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120]
+    cv = _cvar(pd.Series([float(p) for p in prices]))
+    check("cvar negative", cv is not None and cv < 0)
+
+
 def main():
     for fn in [test_selective_consensus, test_portfolio_builder, test_news_sentiment,
                test_score_decision_alpha, test_reflect_critique, test_style_levels,
-               test_verifier_gate, test_correlation_dampening]:
+               test_verifier_gate, test_correlation_dampening, test_apply_cap, test_cvar]:
         try:
             fn()
         except Exception as e:
