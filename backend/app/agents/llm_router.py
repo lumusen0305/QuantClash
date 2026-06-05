@@ -104,14 +104,17 @@ def get_llm(tier: str, mode: str = "deep"):
         except Exception:
             _gemini_failed_at = time.time()
 
-    # Fallback to Alibaba Bailian (qwen-plus via OpenAI-compatible API)
+    # Fallback to Alibaba Bailian (OpenAI-compatible API). Smart-Scheduler-style
+    # routing (FinRobot 2405.14767): cheap/fast model for "quick" analyst tasks,
+    # stronger qwen-plus for "deep" reasoning tasks.
     if settings.ALI_API_KEY:
+        model_name = settings.DASHSCOPE_MODEL_QUICK if mode == "quick" else settings.DASHSCOPE_MODEL
         return ChatOpenAI(
-            model=settings.DASHSCOPE_MODEL,
+            model=model_name,
             api_key=settings.ALI_API_KEY,
             base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
             temperature=0.1,
-            callbacks=_callbacks("bailian", settings.DASHSCOPE_MODEL),
+            callbacks=_callbacks("bailian", model_name),
         )
 
     # Last resort: Ollama (local GPU)

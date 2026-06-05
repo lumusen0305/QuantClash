@@ -30,8 +30,9 @@ class Settings(BaseSettings):
     OLLAMA_URL: str = "http://localhost:11434"
     OLLAMA_MODEL: str = "qwen3:8b"  # local GPU model (Trading-R1's Qwen3 family, reasoning)
     ALI_API_KEY: str = ""
-    DASHSCOPE_MODEL: str = "qwen-plus"          # standard tier
+    DASHSCOPE_MODEL: str = "qwen-plus"          # standard tier (deep tasks)
     DASHSCOPE_MODEL_PRO: str = "qwen-max"       # pro tier (stronger, pricier)
+    DASHSCOPE_MODEL_QUICK: str = "qwen-flash"   # quick tier (cheap/fast analysts)
 
     # Celery
     CELERY_BROKER_URL: str = "redis://localhost:6379/1"
