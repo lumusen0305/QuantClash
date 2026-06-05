@@ -532,6 +532,16 @@ export interface EvalScore {
   note?: string | null;
 }
 
+export interface SectorRow {
+  rank: number; etf: string; sector: string;
+  mom_1m: number; mom_3m: number; score: number; defensive: boolean;
+}
+export interface SectorRotation {
+  sectors: SectorRow[]; leaders?: string[]; laggards?: string[]; tilt?: string;
+}
+export const fetchSectorRotation = () =>
+  api.get<SectorRotation>('/screener/sectors').then((r) => r.data);
+
 export const fetchEvalLabels = () =>
   api.get<{ labels: { label: string; count: number }[] }>('/eval/labels').then((r) => r.data.labels);
 

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { RefreshCw } from 'lucide-react';
-import { fetchMarketMovers, runScreen, fetchScreenerFields, runFactorScreen, type ScreenerFilters, type ScreenerResult, type ScreenerRow, type FactorRow } from '../api/client';
+import { fetchMarketMovers, runScreen, fetchScreenerFields, runFactorScreen, fetchSectorRotation, type ScreenerFilters, type ScreenerResult, type ScreenerRow, type FactorRow, type SectorRotation } from '../api/client';
 import { useI18n } from '../i18n/context';
 import { addToWatchlist, isInWatchlist } from '../lib/workspace';
 import styles from './DiscoveryPage.module.css';
@@ -33,7 +33,7 @@ interface SectorRect {
   x: number; y: number; width: number; height: number; sector: SectorGroup;
 }
 
-type DiscoverTab = 'heatmap' | 'screener' | 'factors';
+type DiscoverTab = 'heatmap' | 'screener' | 'factors' | 'sectors';
 
 // ─── Sector Mapping ───────────────────────────────────────────────────────────
 
@@ -656,6 +656,44 @@ function FactorScreener({ onViewChart }: { onViewChart: (ticker: string) => void
   );
 }
 
+// ── Sector rotation view ──
+function SectorRotationView() {
+  const { t } = useI18n();
+  const [data, setData] = useState<SectorRotation | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const load = useCallback(async () => {
+    setLoading(true); setError(null);
+    try { setData(await fetchSectorRotation()); }
+    catch (e) { setError(e instanceof Error ? e.message : 'failed'); }
+    finally { setLoading(false); }
+  }, []);
+  useEffect(() => { load(); }, [load]);
+  return (
+    <div style={{ padding: '12px 16px', overflowY: 'auto' }}>
+      {data?.tilt && (
+        <div style={{ marginBottom: 10, fontSize: 13 }}>
+          <strong>{data.tilt}</strong>
+          <span style={{ color: 'var(--text-secondary)', marginLeft: 10 }}>
+            {t('discover.leaders')}: {data.leaders?.join(', ')}
+          </span>
+        </div>
+      )}
+      {error && <div style={{ color: 'var(--danger,#dc2626)', fontSize: 12 }}>{error}</div>}
+      {loading && <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{t('factors.scoring')}</div>}
+      {(data?.sectors ?? []).map((s) => (
+        <div key={s.etf} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '5px 0', borderBottom: '1px solid var(--border)' }}>
+          <span style={{ width: 24, color: 'var(--text-secondary)' }}>#{s.rank}</span>
+          <span style={{ width: 56, fontWeight: 700 }}>{s.etf}</span>
+          <span style={{ flex: 1, fontSize: 13 }}>{s.sector}{s.defensive ? ' 🛡' : ''}</span>
+          <span style={{ width: 70, textAlign: 'right', color: s.mom_1m >= 0 ? '#16a34a' : '#dc2626', fontSize: 12 }}>1m {s.mom_1m}%</span>
+          <span style={{ width: 70, textAlign: 'right', color: s.mom_3m >= 0 ? '#16a34a' : '#dc2626', fontSize: 12 }}>3m {s.mom_3m}%</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 interface DiscoveryPageProps { onSelectTicker: (ticker: string) => void; }
 const REFRESH_MS = 5 * 60 * 1_000;
 
@@ -732,6 +770,11 @@ export function DiscoveryPage({ onSelectTicker }: DiscoveryPageProps) {
             onClick={() => setTab('factors')}>
             {t('discover.factors')}
           </button>
+          <button
+            className={`${styles.segBtn} ${tab === 'sectors' ? styles.segBtnActive : ''}`}
+            onClick={() => setTab('sectors')}>
+            {t('discover.sectors')}
+          </button>
         </div>
 
         {/* Heatmap legend — only when heatmap active */}
@@ -774,6 +817,9 @@ export function DiscoveryPage({ onSelectTicker }: DiscoveryPageProps) {
 
       {/* ── Multi-factor screener tab ── */}
       {tab === 'factors' && <FactorScreener onViewChart={onSelectTicker} />}
+
+      {/* ── Sector rotation tab ── */}
+      {tab === 'sectors' && <SectorRotationView />}
     </div>
   );
 }
