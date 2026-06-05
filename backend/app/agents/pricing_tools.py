@@ -348,10 +348,36 @@ def get_recent_news(ticker: str) -> str:
         return f"News unavailable for {ticker}: {e}"
 
 
+@tool
+def get_insider_activity(ticker: str) -> str:
+    """Get recent insider (executive/director) buy vs sell activity. Net insider
+    BUYING is a documented bullish signal (insiders know their company); heavy
+    selling can be a caution flag."""
+    try:
+        df = yf.Ticker(ticker.upper()).insider_transactions
+        if df is None or len(df) == 0:
+            return f"No insider transaction data for {ticker}."
+        buys = sells = 0
+        for _, row in df.head(25).iterrows():
+            blob = " ".join(str(row.get(c, "")) for c in df.columns).lower()
+            if "buy" in blob or "purchase" in blob:
+                buys += 1
+            elif "sale" in blob or "sell" in blob:
+                sells += 1
+        if buys == 0 and sells == 0:
+            return f"Insider data present for {ticker} but no clear buy/sell labels."
+        tilt = "net BUYING (bullish)" if buys > sells else "net SELLING (caution)" if sells > buys else "balanced"
+        return (f"Insider activity for {ticker.upper()} (recent {buys+sells} transactions): "
+                f"{buys} buys vs {sells} sells — {tilt}.")
+    except Exception as e:
+        return f"Insider data unavailable for {ticker}: {e}"
+
+
 PRICING_TOOLS = [
     get_technical_levels,
     get_fundamentals_snapshot,
     get_price_history,
+    get_insider_activity,
     get_recent_news,
 ]
 
