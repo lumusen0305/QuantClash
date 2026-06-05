@@ -1,0 +1,171 @@
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+  padding: 0 16px;
+  flex-shrink: 0;
+  height: 42px;
+}
+
+.logo {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--accent);
+  margin-right: 24px;
+  letter-spacing: -0.5px;
+}
+
+.navTabs {
+  display: flex;
+  gap: 0;
+  height: 100%;
+}
+
+.navBtn {
+  padding: 0 16px;
+  height: 100%;
+  background: none;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  border-bottom: 2px solid transparent;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.navBtn:hover {
+  color: var(--text-primary);
+}
+
+.active {
+  color: var(--text-primary);
+  border-bottom-color: var(--accent);
+}
+
+.navSpacer {
+  flex: 1;
+}
+
+.navActions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.iconBtn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 8px;
+  background: none;
+  color: var(--text-secondary);
+  border-radius: var(--radius);
+  font-size: 12px;
+  transition: background 0.15s, color 0.15s;
+}
+
+.iconBtn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.iconLabel {
+  font-weight: 600;
+  font-size: 11px;
+}
+
+.modelBadge {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  background: rgba(41, 98, 255, 0.1);
+  color: var(--accent);
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+
+.content {
+  flex: 1;
+  overflow: hidden;
+}
+
+/* ── More dropdown ── */
+
+.moreWrap {
+  position: relative;
+  height: 100%;
+  display: flex;
+  align-items: center;
+}
+
+.moreBtn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.moreMenu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  min-width: 180px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  z-index: 200;
+  overflow: hidden;
+  padding: 4px 0;
+  animation: moreFade 0.12s ease;
+}
+
+@keyframes moreFade {
+  from { opacity: 0; transform: translateY(-4px); }
+}
+
+.moreMenuItem {
+  display: block;
+  width: 100%;
+  padding: 8px 16px;
+  text-align: left;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: none;
+  transition: background 0.1s, color 0.1s;
+}
+
+.moreMenuItem:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.moreMenuItemActive {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.moreMenuDivider {
+  height: 1px;
+  background: var(--border);
+  margin: 4px 0;
+}
+
+.moreMenuSubhead {
+  padding: 4px 16px 2px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+}

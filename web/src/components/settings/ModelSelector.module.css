@@ -1,0 +1,187 @@
+/* ─── Wrapper ─────────────────────────────────────────────────────────────── */
+
+.wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+/* ─── Trigger button ──────────────────────────────────────────────────────── */
+
+.trigger {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 8px;
+  background: none;
+  color: var(--text-secondary);
+  border-radius: var(--radius);
+  font-size: 12px;
+  font-weight: 500;
+  transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
+  max-width: 180px;
+}
+
+.trigger:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.triggerOpen {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.triggerIcon {
+  flex-shrink: 0;
+  color: var(--text-muted);
+}
+
+.triggerLabel {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+/* ─── Chevron ─────────────────────────────────────────────────────────────── */
+
+.chevron {
+  flex-shrink: 0;
+  color: var(--text-muted);
+  transition: transform 0.15s;
+}
+
+.chevronOpen {
+  transform: rotate(180deg);
+}
+
+/* ─── Status dot ──────────────────────────────────────────────────────────── */
+
+.dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.dotAvailable {
+  background: var(--green);
+  box-shadow: 0 0 4px var(--green);
+}
+
+.dotCooldown {
+  background: var(--orange);
+  box-shadow: 0 0 4px var(--orange);
+}
+
+.dotOffline {
+  background: var(--text-muted);
+}
+
+/* ─── Dropdown ────────────────────────────────────────────────────────────── */
+
+.dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  min-width: 220px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  z-index: 200;
+  overflow: hidden;
+}
+
+.dropdownHeader {
+  padding: 8px 12px 6px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border);
+}
+
+.dropdownEmpty {
+  padding: 12px;
+  font-size: 12px;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+/* ─── Dropdown items ──────────────────────────────────────────────────────── */
+
+.dropdownItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 12px;
+  background: none;
+  text-align: left;
+  color: var(--text-primary);
+  font-size: 12px;
+  transition: background 0.1s;
+  border-bottom: 1px solid var(--bg-tertiary);
+}
+
+.dropdownItem:last-child {
+  border-bottom: none;
+}
+
+.dropdownItem:hover:not(:disabled) {
+  background: var(--bg-tertiary);
+}
+
+.dropdownItemActive {
+  background: rgba(41, 98, 255, 0.08);
+}
+
+.dropdownItemActive:hover {
+  background: rgba(41, 98, 255, 0.12) !important;
+}
+
+.dropdownItemDisabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.itemName {
+  flex: 1;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.itemStatus {
+  font-size: 10px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  flex-shrink: 0;
+}
+
+.proBadge {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: #fff;
+  background: linear-gradient(135deg, #f5a623, #f08c00);
+  padding: 1px 5px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.itemCheck {
+  font-size: 10px;
+  color: var(--accent);
+  flex-shrink: 0;
+  font-weight: 700;
+}

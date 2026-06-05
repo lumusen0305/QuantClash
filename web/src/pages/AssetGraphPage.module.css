@@ -1,0 +1,489 @@
+/* AssetGraphPage — Apple / FT aesthetic. Dense, legible, themed. */
+
+/* ── Page shell ── */
+.page {
+  /* Fill the App's .content div fully, then scroll within */
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  overflow-y: auto;
+  background: var(--bg-primary);
+  padding-bottom: 64px;
+}
+
+/* Inner centering wrapper used by every direct-child section */
+.inner {
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 28px;
+  box-sizing: border-box;
+}
+
+/* ── Page header ── */
+.pageHeader {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 28px 28px 20px;
+  box-sizing: border-box;
+}
+
+.pageTitle {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.pageSubtitle {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: 5px 0 0;
+}
+
+/* ── Explainer banner ── */
+.explainer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+  max-width: 1280px;
+  margin: 0 auto 24px;
+  padding: 16px 20px;
+  /* Subtract the 28px side padding so it aligns with the grid */
+  width: calc(100% - 56px);
+  box-sizing: border-box;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: 10px;
+}
+
+.explainerText {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin: 0;
+  flex: 1;
+  min-width: 200px;
+}
+
+.classifyAllBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 18px;
+  background: var(--accent);
+  color: #fff;
+  border-radius: var(--radius);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+.classifyAllBtn:hover:not(:disabled) { background: var(--accent-hover); }
+.classifyAllBtn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+/* ── Shared small button ── */
+.smallBtn {
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: 11px;
+  font-weight: 600;
+}
+.smallBtn:hover { border-color: var(--accent); color: var(--accent); }
+
+/* ── Error box ── */
+.errorBox {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  max-width: 1280px;
+  margin: 0 auto 16px;
+  width: calc(100% - 56px);
+  padding: 11px 14px;
+  box-sizing: border-box;
+  background: rgba(239, 83, 80, 0.08);
+  border: 1px solid rgba(239, 83, 80, 0.25);
+  border-radius: var(--radius);
+  color: var(--red);
+  font-size: 12px;
+}
+
+/* ── Theme groups ── */
+.themeGroup {
+  /* Each group is a centered block spanning the same max-width as the grid */
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto 28px;
+  padding: 0 28px;
+  box-sizing: border-box;
+}
+
+.themeLabel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-secondary);
+}
+
+.themeDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  background: var(--accent);
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+.themeCount {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: var(--bg-tertiary);
+  padding: 1px 6px;
+  border-radius: 999px;
+}
+
+.themeLabelMuted {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* ── Card grid — the key layout rule ── */
+.cardGrid {
+  /*
+   * width: 100% so the grid fills its parent fully (themeGroup or page).
+   * auto-fill + minmax lets it go 1→2→3→4 columns as space allows.
+   * The 300px minimum gives good card proportions; 1fr fills the row.
+   */
+  display: grid;
+  width: 100%;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 14px;
+  box-sizing: border-box;
+}
+
+/* Ungrouped grid sits directly under .page — give it its own centering */
+.page > .cardGrid {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 28px;
+}
+
+/* ── Card ── */
+.card {
+  /* No fixed width — let the grid cell dictate width */
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0; /* allow shrinking inside grid cell */
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.card:hover {
+  border-color: rgba(41, 98, 255, 0.3);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
+}
+
+.cardEditing {
+  border-color: var(--accent);
+  background: var(--bg-primary);
+}
+
+/* ── Card header ── */
+.cardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.cardHeaderLeft {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.cardTicker {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+  color: var(--text-primary);
+}
+
+/* ── Hold badge ── */
+.holdBadge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 999px;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+.holdBadgeHeld {
+  background: rgba(41, 98, 255, 0.12);
+  color: var(--accent);
+}
+.holdBadgeWatch {
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+}
+
+/* ── Status badge ── */
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 999px;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.badgeValid   { background: rgba(38, 166, 154, 0.15); color: var(--green); }
+.badgeDrifting{ background: rgba(255, 152, 0, 0.15);  color: var(--orange); }
+.badgeBroken  { background: rgba(239, 83, 80, 0.15);  color: var(--red); }
+.badgeUnknown { background: var(--bg-tertiary); color: var(--text-muted); }
+
+.statusDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.dotValid    { background: var(--green); }
+.dotDrifting { background: var(--orange); }
+.dotBroken   { background: var(--red); }
+
+/* ── View body ── */
+.viewBody { display: flex; flex-direction: column; gap: 10px; }
+
+.chipRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.metaChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-primary);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  padding: 3px 9px;
+  border-radius: var(--radius);
+}
+
+.chipKey {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  margin-right: 2px;
+}
+
+.thesisBlock {
+  margin: 0;
+  padding: 10px 12px;
+  border-left: 2px solid var(--accent);
+  background: var(--bg-tertiary);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+.untaggedNote {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* ── Edit body ── */
+.editBody { display: flex; flex-direction: column; gap: 12px; }
+
+.editGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.editField { display: flex; flex-direction: column; gap: 4px; }
+.editFieldFull { display: flex; flex-direction: column; gap: 4px; }
+
+.editLabel {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--text-muted);
+}
+
+.editInput {
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 12px;
+  width: 100%;
+  box-sizing: border-box;
+}
+.editInput:focus { outline: none; border-color: var(--accent); }
+.editInput::placeholder { color: var(--text-muted); }
+
+.textarea {
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 12px;
+  width: 100%;
+  box-sizing: border-box;
+  resize: vertical;
+  font-family: inherit;
+  line-height: 1.5;
+}
+.textarea:focus { outline: none; border-color: var(--accent); }
+.textarea::placeholder { color: var(--text-muted); }
+
+/* ── Card actions ── */
+.cardActions {
+  display: flex;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 4px;
+  border-top: 1px solid var(--border);
+}
+
+.classifyBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: rgba(41, 98, 255, 0.1);
+  border: 1px solid rgba(41, 98, 255, 0.25);
+  color: var(--accent);
+  border-radius: var(--radius);
+  font-size: 11px;
+  font-weight: 600;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+.classifyBtn:hover:not(:disabled) { background: rgba(41, 98, 255, 0.18); }
+.classifyBtn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.editBtn {
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 600;
+  transition: border-color 0.15s, color 0.15s;
+  margin-left: auto;
+}
+.editBtn:hover { border-color: var(--accent); color: var(--accent); }
+.editBtnActive { border-color: var(--accent); color: var(--accent); background: rgba(41, 98, 255, 0.08); }
+
+/* ── Spinner ── */
+.spinner {
+  width: 12px;
+  height: 12px;
+  border: 2px solid rgba(120, 123, 134, 0.3);
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: ag-spin 0.7s linear infinite;
+  display: inline-block;
+  vertical-align: -2px;
+  flex-shrink: 0;
+}
+@keyframes ag-spin { to { transform: rotate(360deg); } }
+
+/* ── Empty state ── */
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 80px 32px;
+  gap: 14px;
+  max-width: 1280px;
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
+}
+.emptyIcon  { font-size: 48px; opacity: 0.2; line-height: 1; }
+.emptyTitle { font-size: 17px; font-weight: 700; color: var(--text-secondary); margin: 0; }
+.emptyBody  { font-size: 13px; color: var(--text-muted); margin: 0; max-width: 360px; line-height: 1.6; }
+
+/* ── Responsive ── */
+@media (max-width: 900px) {
+  .cardGrid {
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .pageHeader {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+  .explainer {
+    width: calc(100% - 32px);
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .errorBox {
+    width: calc(100% - 32px);
+  }
+  .themeGroup {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+  .page > .cardGrid {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+  .cardGrid {
+    grid-template-columns: 1fr;
+  }
+  .editGrid {
+    grid-template-columns: 1fr;
+  }
+}

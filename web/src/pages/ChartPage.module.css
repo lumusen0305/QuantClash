@@ -1,0 +1,1088 @@
+/* ─── Page shell ──────────────────────────────────────────────────────────── */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  background: var(--bg-primary);
+  overflow: hidden;
+}
+
+/* ─── Top bar ─────────────────────────────────────────────────────────────── */
+
+.topBar {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  height: 48px;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  padding: 0 12px;
+  overflow: visible;
+  position: relative;
+  z-index: 10;
+}
+
+/* Search */
+
+.searchWrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  width: 220px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  height: 30px;
+  padding: 0 8px;
+  gap: 6px;
+  transition: border-color 0.15s;
+}
+
+.searchWrap:focus-within {
+  border-color: var(--accent);
+}
+
+.searchIcon {
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.searchInput {
+  flex: 1;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 0;
+  font-size: 12px;
+  color: var(--text-primary);
+  outline: none;
+  min-width: 0;
+}
+
+.searchInput::placeholder {
+  color: var(--text-muted);
+}
+
+.searchClear {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  color: var(--text-muted);
+  padding: 0;
+  border-radius: 3px;
+  flex-shrink: 0;
+  transition: color 0.1s;
+}
+
+.searchClear:hover {
+  color: var(--text-primary);
+}
+
+/* Dropdown */
+
+.dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  width: 320px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  z-index: 100;
+  overflow: hidden;
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.dropdownItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 12px;
+  background: none;
+  text-align: left;
+  color: var(--text-primary);
+  font-size: 12px;
+  transition: background 0.1s;
+  border-bottom: 1px solid var(--bg-tertiary);
+}
+
+.dropdownItem:last-child {
+  border-bottom: none;
+}
+
+.dropdownItem:hover {
+  background: var(--bg-tertiary);
+}
+
+.dropdownSymbol {
+  font-weight: 700;
+  font-size: 12px;
+  color: var(--text-primary);
+  min-width: 60px;
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.dropdownDesc {
+  flex: 1;
+  color: var(--text-secondary);
+  font-size: 11px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dropdownExchange {
+  font-size: 10px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+/* Ticker badge */
+
+.tickerBadge {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-left: 12px;
+  flex-shrink: 0;
+}
+
+.tickerSymbol {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.3px;
+  font-variant-numeric: tabular-nums;
+}
+
+.tickerName {
+  font-size: 11px;
+  color: var(--text-muted);
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Quote strip */
+
+.quoteStrip {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: 16px;
+  flex-shrink: 0;
+}
+
+.quotePrice {
+  font-size: 15px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.3px;
+  margin-right: 6px;
+}
+
+.quoteChange {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.quotePct {
+  font-weight: 400;
+  font-size: 11px;
+}
+
+.positive {
+  color: var(--green);
+}
+
+.negative {
+  color: var(--red);
+}
+
+.quoteSep {
+  display: inline-block;
+  width: 1px;
+  height: 16px;
+  background: var(--border);
+  margin: 0 10px;
+  flex-shrink: 0;
+}
+
+.quoteMeta {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+  padding: 0 6px;
+  white-space: nowrap;
+}
+
+.quoteLabel {
+  font-size: 10px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.quoteLoading {
+  display: flex;
+  align-items: center;
+  margin-left: 16px;
+  color: var(--text-muted);
+}
+
+.topBarSpacer {
+  flex: 1;
+}
+
+/* News toggle */
+
+.newsToggle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 10px;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  border-radius: var(--radius);
+  font-size: 12px;
+  flex-shrink: 0;
+  transition: background 0.15s, color 0.15s;
+}
+
+.newsToggle:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.newsToggleActive {
+  background: rgba(41, 98, 255, 0.12);
+  color: var(--accent);
+}
+
+.newsToggleIcon {
+  transition: transform 0.2s;
+  transform: rotate(180deg);
+}
+
+.newsToggleIconOpen {
+  transform: rotate(0deg);
+}
+
+/* ─── Period toolbar ──────────────────────────────────────────────────────── */
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 36px;
+  padding: 0 12px;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.periodGroup {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.periodBtn {
+  padding: 4px 10px;
+  background: none;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 4px;
+  letter-spacing: 0.2px;
+  transition: background 0.1s, color 0.1s;
+}
+
+.periodBtn:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.periodBtnActive {
+  background: rgba(41, 98, 255, 0.15);
+  color: var(--accent);
+}
+
+.chartLoading {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.chartError {
+  font-size: 11px;
+  color: var(--red);
+}
+
+/* ─── Watchlist toggle button (top bar) ───────────────────────────────────── */
+
+.watchlistToggleBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  background: none;
+  color: var(--text-muted);
+  border-radius: var(--radius);
+  margin-right: 6px;
+  transition: background 0.15s, color 0.15s;
+}
+
+.watchlistToggleBtn:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.watchlistToggleBtnActive {
+  color: var(--accent);
+}
+
+/* ─── Star button ─────────────────────────────────────────────────────────── */
+
+.starBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  background: none;
+  color: var(--text-muted);
+  border-radius: var(--radius);
+  margin-left: 4px;
+  transition: color 0.15s, background 0.15s;
+}
+
+.starBtn:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.starBtnActive {
+  color: #f5c518;
+}
+
+.dagAnalyzeBtn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+  height: 26px;
+  padding: 0 10px;
+  margin-left: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #fff;
+  background: var(--accent, #00a870);
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: filter 0.15s, transform 0.05s;
+}
+
+.dagAnalyzeBtn:hover {
+  filter: brightness(1.08);
+}
+
+.dagAnalyzeBtn:active {
+  transform: translateY(1px);
+}
+
+.starFilled {
+  fill: #f5c518;
+  stroke: #f5c518;
+}
+
+.starOutline {
+  fill: none;
+}
+
+/* ─── Body ────────────────────────────────────────────────────────────────── */
+
+.body {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* ─── Chart ───────────────────────────────────────────────────────────────── */
+
+.chartArea {
+  flex: 1;
+  position: relative;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.chart {
+  width: 100%;
+  height: 100%;
+}
+
+/* ─── Watchlist sidebar ───────────────────────────────────────────────────── */
+
+.watchlistSidebar {
+  width: 218px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-secondary);
+  border-right: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.watchlistHeader {
+  display: flex;
+  align-items: center;
+  padding: 8px 10px 7px 12px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  gap: 4px;
+}
+
+.watchlistHeaderTitle {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--text-muted);
+  flex: 1;
+}
+
+/* Add-folder button in header */
+
+.folderAddBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  background: none;
+  color: var(--text-muted);
+  border-radius: 4px;
+  transition: background 0.12s, color 0.12s;
+}
+
+.folderAddBtn:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+/* ── Sidebar search-to-add ── */
+
+.sidebarSearch {
+  position: relative;
+  flex-shrink: 0;
+  padding: 7px 10px 8px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-secondary);
+}
+
+.sidebarSearchWrap {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  height: 26px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0 8px;
+  transition: border-color 0.12s;
+}
+.sidebarSearchWrap:focus-within {
+  border-color: var(--accent);
+}
+
+.sidebarSearchIcon {
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.sidebarSearchInput {
+  flex: 1;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 0;
+  font-size: 11px;
+  color: var(--text-primary);
+  outline: none;
+  min-width: 0;
+}
+.sidebarSearchInput::placeholder {
+  color: var(--text-muted);
+  font-size: 10.5px;
+}
+
+.sidebarAddedFlash {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--green);
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.sidebarDropdown {
+  position: absolute;
+  top: calc(100% - 1px);
+  left: 0;
+  right: 0;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 var(--radius) var(--radius);
+  box-shadow: 0 6px 18px rgba(0,0,0,0.4);
+  z-index: 50;
+  overflow: hidden;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.sidebarDropdownItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 7px 10px;
+  background: none;
+  text-align: left;
+  border-bottom: 1px solid var(--bg-tertiary);
+  transition: background 0.1s;
+}
+.sidebarDropdownItem:last-child { border-bottom: none; }
+.sidebarDropdownItem:hover { background: var(--bg-tertiary); }
+.sidebarDropdownItem:hover .sidebarDropdownAdd { opacity: 1; }
+
+.sidebarDropdownSymbol {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-primary);
+  min-width: 44px;
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.sidebarDropdownDesc {
+  flex: 1;
+  font-size: 10px;
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sidebarDropdownAdd {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--accent);
+  opacity: 0;
+  flex-shrink: 0;
+  white-space: nowrap;
+  transition: opacity 0.1s;
+}
+
+.watchlistList {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0;
+}
+
+.watchlistEmpty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  font-size: 11px;
+  color: var(--text-muted);
+  text-align: center;
+  padding: 8px 12px;
+  font-style: italic;
+}
+
+/* ─── Folder section ─────────────────────────────────────────────────────── */
+
+.folderSection {
+  display: flex;
+  flex-direction: column;
+}
+
+.folderHeader {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 8px 5px 6px;
+  cursor: pointer;
+  border-left: 2px solid transparent;
+  background: transparent;
+  transition: background 0.1s, border-color 0.12s;
+  position: relative;
+  user-select: none;
+}
+
+.folderHeader:hover {
+  background: var(--bg-tertiary);
+}
+
+.folderHeader:hover .folderActions {
+  opacity: 1;
+}
+
+.folderHeaderActive {
+  border-left-color: var(--accent);
+}
+
+/* Collapse chevron */
+
+.folderCollapseBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  background: none;
+  color: var(--text-muted);
+  border-radius: 3px;
+  transition: transform 0.18s, color 0.1s;
+  transform: rotate(-90deg);
+}
+
+.folderCollapseBtnOpen {
+  transform: rotate(0deg);
+}
+
+.folderCollapseBtn:hover {
+  color: var(--text-primary);
+}
+
+.folderName {
+  flex: 1;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.folderHeaderActive .folderName {
+  color: var(--text-primary);
+}
+
+.folderCount {
+  font-size: 10px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+  background: var(--bg-tertiary);
+  border-radius: 8px;
+  padding: 1px 5px;
+  line-height: 1.4;
+}
+
+/* Folder action buttons (rename / delete) */
+
+.folderActions {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.folderActionBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  background: none;
+  color: var(--text-muted);
+  border-radius: 3px;
+  transition: background 0.1s, color 0.1s;
+}
+
+.folderActionBtn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.folderDeleteBtn:hover {
+  color: var(--red);
+}
+
+/* Inline rename input */
+
+.folderRenameInput {
+  flex: 1;
+  background: var(--bg-primary);
+  border: 1px solid var(--accent);
+  border-radius: 3px;
+  padding: 1px 5px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-primary);
+  outline: none;
+  min-width: 0;
+}
+
+/* ─── Ticker card grid ────────────────────────────────────────────────────── */
+
+.folderCards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5px;
+  padding: 5px 7px 7px;
+}
+
+/* Single card */
+
+.tickerCard {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 7px 7px 5px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: border-color 0.12s, background 0.12s, box-shadow 0.12s;
+  overflow: hidden;
+  min-width: 0;
+}
+
+.tickerCard:hover {
+  background: var(--bg-tertiary);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px rgba(41, 98, 255, 0.08);
+}
+
+.tickerCard:hover .cardRemoveBtn {
+  opacity: 1;
+}
+
+.tickerCardActive {
+  border-color: var(--accent);
+  background: rgba(41, 98, 255, 0.07);
+}
+
+.tickerCardActive .cardSymbol {
+  color: var(--accent);
+}
+
+/* Remove X button — top-right corner, appears on hover */
+
+.cardRemoveBtn {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  background: var(--bg-hover);
+  color: var(--text-muted);
+  border-radius: 3px;
+  opacity: 0;
+  transition: opacity 0.12s, color 0.1s, background 0.1s;
+  z-index: 1;
+}
+
+.cardRemoveBtn:hover {
+  color: var(--red);
+  background: rgba(239, 83, 80, 0.12);
+}
+
+/* Card top row: symbol + pct badge */
+
+.cardTop {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 3px;
+}
+
+.cardSymbol {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.2px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 58px;
+}
+
+.cardPct {
+  font-size: 9px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+  flex-shrink: 0;
+  letter-spacing: 0.1px;
+}
+
+/* Card bottom row: price + sparkline */
+
+.cardBottom {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 3px;
+}
+
+.cardPrice {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+  font-family: 'Trebuchet MS', monospace;
+  line-height: 1.2;
+  flex-shrink: 0;
+}
+
+/* Sparkline SVG */
+
+.sparkline {
+  display: block;
+  flex-shrink: 0;
+  overflow: visible;
+}
+
+/* ─── News sidebar ────────────────────────────────────────────────────────── */
+
+.newsSidebar {
+  width: 300px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-secondary);
+  border-left: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.newsHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.newsHeaderTitle {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-secondary);
+}
+
+.newsHeaderTicker {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: 0.3px;
+}
+
+.newsList {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.newsCard {
+  display: block;
+  padding: 10px 10px 8px;
+  border-radius: var(--radius);
+  text-decoration: none;
+  color: inherit;
+  background: var(--bg-primary);
+  border: 1px solid transparent;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.newsCard:hover {
+  border-color: var(--border);
+  background: var(--bg-tertiary);
+}
+
+.newsCard:hover .newsExternal {
+  opacity: 1;
+}
+
+.newsCardMeta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 5px;
+}
+
+.newsSource {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  color: var(--accent);
+}
+
+.newsTime {
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-left: auto;
+}
+
+.newsExternal {
+  color: var(--text-muted);
+  opacity: 0;
+  transition: opacity 0.15s;
+  flex-shrink: 0;
+}
+
+.newsTitle {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.4;
+  margin-bottom: 4px;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.newsSummary {
+  font-size: 11px;
+  color: var(--text-secondary);
+  line-height: 1.45;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.newsLoading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 80px;
+  color: var(--text-muted);
+}
+
+.newsEmpty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 80px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* ─── Spinner ─────────────────────────────────────────────────────────────── */
+
+.spinner {
+  animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* ─── Responsive ──────────────────────────────────────────────────────────── */
+
+@media (max-width: 1200px) {
+  .newsSidebar {
+    display: none;
+  }
+
+  .watchlistSidebar {
+    width: 180px;
+  }
+
+  /* Collapse to single column at narrow sidebar width */
+  .folderCards {
+    grid-template-columns: 1fr;
+  }
+
+  .quoteMeta:nth-child(n+4) {
+    display: none;
+  }
+}
+
+@media (max-width: 900px) {
+  .watchlistSidebar {
+    display: none;
+  }
+}
+
+@media (max-width: 900px) {
+  .tickerName {
+    display: none;
+  }
+
+  .quoteStrip {
+    margin-left: 10px;
+  }
+
+  .quoteMeta {
+    display: none;
+  }
+
+  .quoteSep {
+    display: none;
+  }
+
+  .searchWrap {
+    width: 160px;
+  }
+}
+
+@media (max-width: 600px) {
+  .tickerBadge {
+    display: none;
+  }
+
+  .searchWrap {
+    width: 140px;
+  }
+}

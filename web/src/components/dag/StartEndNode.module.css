@@ -1,0 +1,35 @@
+.node {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 80px;
+  height: 40px;
+  border-radius: 20px;
+  border: 2px solid;
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 1px;
+}
+
+.start {
+  background: rgba(38, 166, 154, 0.15);
+  border-color: var(--green);
+  color: var(--green);
+}
+
+.end {
+  background: rgba(239, 83, 80, 0.15);
+  border-color: var(--red);
+  color: var(--red);
+}
+
+.label {
+  user-select: none;
+}
+
+.handle {
+  width: 8px;
+  height: 8px;
+  background: var(--text-secondary);
+  border: 2px solid var(--bg-primary);
+}

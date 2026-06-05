@@ -1,0 +1,350 @@
+"""Pricing tools + deterministic technical baseline for the final decision.
+
+Two layers (hybrid design):
+  1. `compute_levels(ticker)` — a DETERMINISTIC snapshot (current price, ATR,
+     support/resistance, moving averages, RSI). Always injected into the prompt
+     so the LLM can never invent a price scale (e.g. pre-split NVDA ~$900).
+  2. `PRICING_TOOLS` — LangChain tools the decision agent MAY call on its own to
+     gather extra evidence (fundamentals, longer history, news) before fixing
+     entry / target / stop. The agent decides which (if any) to use.
+"""
+from __future__ import annotations
+
+import numpy as np
+import pandas as pd
+import yfinance as yf
+from langchain_core.tools import tool
+
+from app.agents.analysts.news_analyst import _fetch_yahoo_rss
+
+
+def _history(ticker: str, period: str = "6mo") -> pd.DataFrame:
+    return yf.Ticker(ticker).history(period=period)
+
+
+def _rsi(closes: pd.Series, period: int = 14) -> float:
+    delta = closes.diff()
+    gain = delta.clip(lower=0).rolling(period).mean()
+    loss = (-delta.clip(upper=0)).rolling(period).mean()
+    rs = gain / loss.replace(0, np.nan)
+    rsi = 100 - (100 / (1 + rs))
+    val = rsi.iloc[-1]
+    return round(float(val), 1) if pd.notna(val) else 50.0
+
+
+def _atr(hist: pd.DataFrame, period: int = 14) -> float:
+    high, low, close = hist["High"], hist["Low"], hist["Close"]
+    prev_close = close.shift(1)
+    tr = pd.concat([
+        high - low,
+        (high - prev_close).abs(),
+        (low - prev_close).abs(),
+    ], axis=1).max(axis=1)
+    val = tr.rolling(period).mean().iloc[-1]
+    return round(float(val), 2) if pd.notna(val) else 0.0
+
+
+def _adx(hist: pd.DataFrame, period: int = 14) -> float | None:
+    """Average Directional Index — trend strength (0-100, >25 = trending)."""
+    try:
+        high, low, close = hist["High"], hist["Low"], hist["Close"]
+        up = high.diff()
+        down = -low.diff()
+        plus_dm = ((up > down) & (up > 0)) * up
+        minus_dm = ((down > up) & (down > 0)) * down
+        prev_close = close.shift(1)
+        tr = pd.concat([high - low, (high - prev_close).abs(), (low - prev_close).abs()], axis=1).max(axis=1)
+        atr = tr.rolling(period).mean()
+        plus_di = 100 * (plus_dm.rolling(period).mean() / atr)
+        minus_di = 100 * (minus_dm.rolling(period).mean() / atr)
+        dx = 100 * (plus_di - minus_di).abs() / (plus_di + minus_di).replace(0, np.nan)
+        val = dx.rolling(period).mean().iloc[-1]
+        return round(float(val), 1) if pd.notna(val) else None
+    except Exception:
+        return None
+
+
+def _obv_trend(hist: pd.DataFrame) -> str | None:
+    """On-Balance Volume trend over the last 20 bars: rising / falling / flat."""
+    try:
+        close, vol = hist["Close"], hist["Volume"]
+        direction = np.sign(close.diff()).fillna(0)
+        obv = (direction * vol).cumsum()
+        recent = obv.tail(20)
+        if len(recent) < 5:
+            return None
+        slope = float(recent.iloc[-1] - recent.iloc[0])
+        scale = float(vol.tail(20).mean()) or 1.0
+        norm = slope / scale
+        return "rising" if norm > 1 else "falling" if norm < -1 else "flat"
+    except Exception:
+        return None
+
+
+def compute_levels(ticker: str) -> dict | None:
+    """Deterministic price/technical snapshot. Returns None if no data."""
+    try:
+        hist = _history(ticker, "6mo")
+        if hist is None or hist.empty:
+            return None
+        close = hist["Close"]
+        price = float(close.iloc[-1])
+        recent20 = hist.tail(20)
+        recent60 = hist.tail(60)
+
+        def _ma(n: int) -> float | None:
+            if len(close) >= n:
+                return round(float(close.rolling(n).mean().iloc[-1]), 2)
+            return None
+
+        return {
+            "ticker": ticker,
+            "current_price": round(price, 2),
+            "atr14": _atr(hist),
+            "rsi14": _rsi(close),
+            "support_20d": round(float(recent20["Low"].min()), 2),
+            "resistance_20d": round(float(recent20["High"].max()), 2),
+            "low_60d": round(float(recent60["Low"].min()), 2),
+            "high_60d": round(float(recent60["High"].max()), 2),
+            "ma20": _ma(20),
+            "ma50": _ma(50),
+            "ma200": _ma(200),
+            "adx14": _adx(hist),
+            "obv_trend": _obv_trend(hist),
+        }
+    except Exception:
+        return None
+
+
+# Style-based risk parameters (TradingGroup-style, ATR as the volatility proxy).
+# stop/target are ATR multiples; size is the fraction of capital to deploy.
+RISK_STYLES = {
+    "conservative": {"stop": 1.0, "target": 1.5, "size": 0.50},
+    "balanced":     {"stop": 1.5, "target": 3.0, "size": 1.00},
+    "aggressive":   {"stop": 2.0, "target": 4.0, "size": 1.00},
+}
+
+
+def style_levels(levels: dict, action: str, style: str = "balanced") -> dict | None:
+    """Suggested entry/target/stop for an action under a risk style, sized off
+    ATR. Returns None for HOLD or when data is missing."""
+    action = (action or "").upper()
+    if action not in ("BUY", "SELL"):
+        return None
+    p = levels.get("current_price")
+    atr = levels.get("atr14")
+    if not p or not atr:
+        return None
+    s = RISK_STYLES.get(style, RISK_STYLES["balanced"])
+    if action == "BUY":
+        return {
+            "style": style, "entry": round(p, 2),
+            "target": round(p + s["target"] * atr, 2),
+            "stop": round(p - s["stop"] * atr, 2),
+            "size_pct": int(s["size"] * 100),
+        }
+    return {  # SELL / short
+        "style": style, "entry": round(p, 2),
+        "target": round(p - s["target"] * atr, 2),
+        "stop": round(p + s["stop"] * atr, 2),
+        "size_pct": int(s["size"] * 100),
+    }
+
+
+def style_levels_text(levels: dict, style: str = "balanced") -> str:
+    """Render the style-based suggested levels for BOTH directions, as guidance
+    the decision agent can anchor to."""
+    buy = style_levels(levels, "BUY", style)
+    sell = style_levels(levels, "SELL", style)
+    if not buy:
+        return ""
+    return (
+        f"RISK-STYLE GUIDANCE ({style}, ATR-sized):\n"
+        f"- if BUY: entry ${buy['entry']}, target ${buy['target']}, stop ${buy['stop']}, size {buy['size_pct']}%\n"
+        f"- if SELL: entry ${sell['entry']}, target ${sell['target']}, stop ${sell['stop']}, size {sell['size_pct']}%\n"
+        "Use these as the default; adjust only with a stated reason.\n"
+    )
+
+
+def levels_text(levels: dict) -> str:
+    """Render the deterministic snapshot for the prompt."""
+    return (
+        f"DETERMINISTIC PRICE SNAPSHOT for {levels['ticker']} (real data, ground truth):\n"
+        f"- current_price: ${levels['current_price']}\n"
+        f"- ATR(14): {levels['atr14']}  (use for stop distance, e.g. 1.5-2x ATR)\n"
+        f"- RSI(14): {levels['rsi14']}\n"
+        f"- 20d support / resistance: ${levels['support_20d']} / ${levels['resistance_20d']}\n"
+        f"- 60d low / high: ${levels['low_60d']} / ${levels['high_60d']}\n"
+        f"- MA20 / MA50 / MA200: {levels['ma20']} / {levels['ma50']} / {levels['ma200']}\n"
+        f"- ADX(14): {levels.get('adx14')} (>25 = strong trend) · OBV trend: {levels.get('obv_trend')}\n"
+    )
+
+
+# ─── Tools the agent may call on its own ────────────────────────────────────
+
+@tool
+def get_technical_levels(ticker: str) -> str:
+    """Get the current price, ATR, RSI, 20d/60d support & resistance, and moving
+    averages (MA20/50/200) for a stock ticker. Use this to ground entry, target
+    and stop-loss prices in real, recent market data."""
+    lv = compute_levels(ticker.upper())
+    if not lv:
+        return f"No price data available for {ticker}."
+    return levels_text(lv)
+
+
+@tool
+def get_fundamentals_snapshot(ticker: str) -> str:
+    """Get a valuation snapshot for a ticker: trailing/forward P/E, market cap,
+    profit margin, revenue growth, and 52-week range. Use to judge whether the
+    current price is rich or cheap before setting a target."""
+    try:
+        info = yf.Ticker(ticker.upper()).info
+    except Exception as e:
+        return f"Fundamentals unavailable for {ticker}: {e}"
+
+    def g(k):
+        v = info.get(k)
+        return v if v is not None else "n/a"
+
+    return (
+        f"Fundamentals for {ticker.upper()}:\n"
+        f"- trailing P/E: {g('trailingPE')}, forward P/E: {g('forwardPE')}\n"
+        f"- market cap: {g('marketCap')}\n"
+        f"- profit margin: {g('profitMargins')}, revenue growth: {g('revenueGrowth')}\n"
+        f"- 52w low / high: {g('fiftyTwoWeekLow')} / {g('fiftyTwoWeekHigh')}\n"
+        f"- analyst target mean: {g('targetMeanPrice')} (low {g('targetLowPrice')}, high {g('targetHighPrice')})"
+    )
+
+
+@tool
+def get_price_history(ticker: str, period: str = "3mo") -> str:
+    """Get a compact OHLC trend summary over a period (e.g. '1mo','3mo','6mo',
+    '1y'). Use to understand the recent trend before deciding an entry zone."""
+    try:
+        hist = _history(ticker.upper(), period)
+        if hist is None or hist.empty:
+            return f"No history for {ticker} over {period}."
+        close = hist["Close"]
+        start, end = float(close.iloc[0]), float(close.iloc[-1])
+        chg = (end - start) / start * 100 if start else 0.0
+        return (
+            f"{ticker.upper()} over {period}: start ${start:.2f} -> end ${end:.2f} "
+            f"({chg:+.1f}%), period high ${float(hist['High'].max()):.2f}, "
+            f"low ${float(hist['Low'].min()):.2f}."
+        )
+    except Exception as e:
+        return f"History unavailable for {ticker}: {e}"
+
+
+@tool
+def get_recent_news(ticker: str) -> str:
+    """Get recent news headlines for a ticker to check for catalysts or risks
+    that should shift the entry timing or target."""
+    try:
+        items = _fetch_yahoo_rss(ticker.upper()) or []
+        if not items:
+            return f"No recent news for {ticker}."
+        lines = [f"- {it.get('title')} ({it.get('publisher','?')})" for it in items[:6]]
+        return f"Recent news for {ticker.upper()}:\n" + "\n".join(lines)
+    except Exception as e:
+        return f"News unavailable for {ticker}: {e}"
+
+
+PRICING_TOOLS = [
+    get_technical_levels,
+    get_fundamentals_snapshot,
+    get_price_history,
+    get_recent_news,
+]
+
+_TOOL_MAP = {t.name: t for t in PRICING_TOOLS}
+
+
+# Anti-tool-hallucination guard rail. From "The Reasoning Trap" (arXiv 2510.22977):
+# stronger reasoning models tend to FABRICATE non-existent tools / fake tool
+# outputs and fail to abstain when the right tool is missing. The cheap,
+# effective mitigation is an explicit "only use provided tools; admit inability
+# rather than fabricate" instruction, plus runtime rejection of invented calls.
+_TOOL_GUARD = (
+    "TOOL DISCIPLINE (read carefully):\n"
+    f"- You may ONLY call these exact tools: {', '.join(_TOOL_MAP)}.\n"
+    "- NEVER invent a tool that is not in that list, and NEVER fabricate or guess "
+    "a tool's output. Only use values that a tool actually returned.\n"
+    "- Every tool takes a single 'ticker' string argument.\n"
+    "- If the available tools cannot ground a number, say so plainly — set that "
+    "value to null in the final decision rather than making one up. Honesty about "
+    "missing data is REQUIRED; a fabricated price is a serious error.\n"
+)
+
+
+def _valid_args(args: dict) -> tuple[bool, str]:
+    """Validate a pricing-tool call's args (all tools need a non-empty ticker)."""
+    if not isinstance(args, dict):
+        return False, "arguments must be an object"
+    tk = args.get("ticker")
+    if not isinstance(tk, str) or not tk.strip():
+        return False, "missing/empty required 'ticker' argument"
+    return True, ""
+
+
+def run_tool_research(llm, system_prompt: str, max_rounds: int = 3) -> str:
+    """Bounded tool-calling loop: the agent decides which PRICING_TOOLS to call.
+
+    Hardened against tool hallucination (arXiv 2510.22977): invented tool names
+    and malformed calls are rejected with a correction instead of being silently
+    accepted, and a warning is surfaced so the final decision can abstain.
+
+    Returns the gathered observations as text (to feed the final decision).
+    `llm` must support .bind_tools(). Synchronous — call via run_in_executor.
+    """
+    from langchain_core.messages import SystemMessage, HumanMessage, ToolMessage
+
+    bound = llm.bind_tools(PRICING_TOOLS)
+    messages = [
+        SystemMessage(content=system_prompt + "\n\n" + _TOOL_GUARD),
+        HumanMessage(content=(
+            "Call whichever of the PROVIDED tools you need to ground the entry / "
+            "target / stop prices in real data, then stop calling tools. Don't "
+            "call a tool twice with the same arguments. Do not call any tool that "
+            "is not in the provided list."
+        )),
+    ]
+    notes: list[str] = []
+    hallucinated = 0
+    for _ in range(max_rounds):
+        ai = bound.invoke(messages)
+        messages.append(ai)
+        tool_calls = getattr(ai, "tool_calls", None) or []
+        if not tool_calls:
+            break
+        for tc in tool_calls:
+            name = tc.get("name")
+            args = tc.get("args", {}) or {}
+            tool = _TOOL_MAP.get(name)
+            if tool is None:
+                # Hallucinated / non-existent tool — reject + correct, don't accept.
+                hallucinated += 1
+                result = (
+                    f"ERROR: '{name}' is not a real tool and was NOT executed. "
+                    f"Only these tools exist: {', '.join(_TOOL_MAP)}. "
+                    "Do not fabricate its output; either call a valid tool or stop."
+                )
+            else:
+                ok, why = _valid_args(args)
+                if not ok:
+                    result = f"ERROR: invalid call to {name} — {why}. Retry with a valid ticker."
+                else:
+                    try:
+                        result = tool.invoke(args)
+                    except Exception as e:
+                        result = f"(tool {name} failed: {e})"
+            notes.append(f"[{name}({args})]\n{result}")
+            messages.append(ToolMessage(content=str(result), tool_call_id=tc.get("id", name)))
+    if hallucinated:
+        notes.append(
+            f"⚠ GROUNDING WARNING: the agent attempted {hallucinated} invented "
+            "tool call(s). Treat tool-derived numbers with extra caution and "
+            "prefer null over any value you cannot trace to a real tool result."
+        )
+    return "\n\n".join(notes) if notes else "(agent called no tools)"

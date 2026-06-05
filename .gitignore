@@ -1,0 +1,48 @@
+# ─── Secrets / env ───────────────────────────────────────────────
+.env
+*.env
+!*.env.example
+backend/.env
+*.pem
+*.key
+credentials*.json
+*serviceaccount*.json
+
+# ─── Python ──────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.db
+*.sqlite3
+celerybeat-schedule*
+
+# ─── Node / web ──────────────────────────────────────────────────
+node_modules/
+dist/
+build/
+.vite/
+*.local
+
+# ─── Flutter / mobile ────────────────────────────────────────────
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+mobile/build/
+
+# ─── OMC / agent state (machine-local) ───────────────────────────
+.omc/
+state/
+
+# ─── Logs / tmp ──────────────────────────────────────────────────
+*.log
+.DS_Store
+*.swp
+.idea/
+.vscode/

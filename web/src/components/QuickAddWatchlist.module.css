@@ -1,0 +1,84 @@
+/* QuickAddWatchlist — shared empty-state widget */
+
+.wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 20px 22px 18px;
+  background: var(--bg-secondary);
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+  max-width: 340px;
+  width: 100%;
+}
+
+.title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin: 0;
+  text-align: center;
+}
+
+.row {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+
+.input {
+  flex: 1;
+  height: 34px;
+  padding: 0 11px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  box-sizing: border-box;
+  transition: border-color 0.12s;
+}
+.input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+.input::placeholder {
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
+.btn {
+  height: 34px;
+  padding: 0 15px;
+  background: var(--accent);
+  color: #fff;
+  border-radius: var(--radius);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+.btn:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.btnFlash {
+  background: var(--green);
+}
+.btnFlash:hover:not(:disabled) {
+  background: var(--green);
+}
+
+.hint {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin: 0;
+  text-align: center;
+}

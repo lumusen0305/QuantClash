@@ -1,0 +1,241 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(6, 9, 14, 0.62);
+  backdrop-filter: blur(6px) saturate(120%);
+  -webkit-backdrop-filter: blur(6px) saturate(120%);
+  animation: fadeIn 0.22s ease both;
+}
+
+.modal {
+  position: relative;
+  width: 100%;
+  max-width: 460px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow), 0 0 0 1px rgba(255, 255, 255, 0.02) inset;
+  overflow: hidden;
+  animation: rise 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Thin accent rail at the very top, TradingView-ish. */
+.modal::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--accent), transparent 70%);
+}
+
+.closeButton {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius);
+  color: var(--text-muted);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.closeButton:hover {
+  color: var(--text-primary);
+  background: var(--bg-tertiary);
+}
+
+.body {
+  padding: 38px 32px 24px;
+  min-height: 240px;
+  display: flex;
+  flex-direction: column;
+}
+
+.kicker {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin: 0 0 14px;
+}
+
+.slideIcon {
+  width: 46px;
+  height: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius);
+  background: var(--accent-muted);
+  color: var(--accent);
+  font-size: 22px;
+  margin-bottom: 18px;
+}
+
+.slideTitle {
+  font-size: 21px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+  margin: 0 0 10px;
+  line-height: 1.25;
+}
+
+.slideBody {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.slideBody strong {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.slideKey {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+}
+
+/* Fade between slides without a carousel lib. */
+.slideEnter {
+  animation: slideIn 0.26s ease both;
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 32px 24px;
+  border-top: 1px solid var(--border);
+}
+
+.dots {
+  display: flex;
+  gap: 7px;
+  flex: 1;
+}
+
+.dot {
+  width: 7px;
+  height: 7px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: var(--border-light);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.dot:hover {
+  background: var(--text-muted);
+}
+
+.dotActive {
+  width: 20px;
+  border-radius: 4px;
+  background: var(--accent);
+}
+
+.skip {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 6px 4px;
+  transition: color 0.15s;
+}
+
+.skip:hover {
+  color: var(--text-secondary);
+}
+
+.primary {
+  padding: 8px 18px;
+  background: var(--accent);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.primary:hover {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .backdrop,
+  .modal,
+  .slideEnter {
+    animation: none;
+  }
+}
+
+@media (max-width: 520px) {
+  .body {
+    padding: 34px 22px 20px;
+  }
+  .footer {
+    padding: 14px 22px 20px;
+  }
+}
