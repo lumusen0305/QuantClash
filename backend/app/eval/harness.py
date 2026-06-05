@@ -206,11 +206,17 @@ def score(label: str, cost_bps: float | None = None) -> dict:
     # one name; std + return/risk make robustness visible (Reliable-Eval §4.6 #3).
     strat_std = None
     return_over_risk = None
+    sortino = None  # downside-only risk-adjusted (StockBench 2510.02209 key metric)
     if len(net_returns) >= 2:
         import statistics as _st
         strat_std = _st.pstdev(net_returns)
         if strat_std > 0:
             return_over_risk = strat_net / strat_std
+        downside = [r for r in net_returns if r < 0]
+        if len(downside) >= 1:
+            dstd = _st.pstdev(downside) if len(downside) >= 2 else abs(downside[0])
+            if dstd and dstd > 0:
+                sortino = strat_net / dstd
     # Buy-and-hold baseline of the analyzed names (equal weight) — the bar from
     # StockBench (arXiv 2510.02209): most LLM agents fail to beat it.
     buy_hold = (sum(bh_by_ticker.values()) / len(bh_by_ticker)) if bh_by_ticker else None
@@ -232,6 +238,7 @@ def score(label: str, cost_bps: float | None = None) -> dict:
         "strategy_return": round(strat_net, 4) if strat_net is not None else None,
         "strategy_return_std": round(strat_std, 4) if strat_std is not None else None,
         "return_over_risk": round(return_over_risk, 3) if return_over_risk is not None else None,
+        "sortino": round(sortino, 3) if sortino is not None else None,
         "strategy_return_gross": round(sum(gross_returns) / len(gross_returns), 4) if gross_returns else None,
         "buy_hold_return": round(buy_hold, 4) if buy_hold is not None else None,
         "excess_vs_buyhold": round(excess, 4) if excess is not None else None,
