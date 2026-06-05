@@ -46,18 +46,28 @@ async def fundamentals_analyst_node(state: AnalysisState) -> dict:
         beta = info.get("beta", "N/A")
         sector = info.get("sector", "N/A")
         industry = info.get("industry", "N/A")
+        fwd_pe = info.get("forwardPE", "N/A")
+        rev_growth = info.get("revenueGrowth", "N/A")
+        # Sell-side analyst consensus target vs price — a documented signal
+        cur = info.get("currentPrice") or info.get("regularMarketPrice")
+        tgt_mean = info.get("targetMeanPrice")
+        upside = None
+        if isinstance(cur, (int, float)) and isinstance(tgt_mean, (int, float)) and cur > 0:
+            upside = (tgt_mean - cur) / cur
 
         fundamentals_summary = (
             f"Ticker: {ticker} | Date: {trade_date}\n"
             f"Sector: {sector} | Industry: {industry}\n"
             f"Market Cap: {market_cap}\n"
             f"Beta: {beta}\n"
-            f"P/E Ratio (trailing): {pe}\n"
+            f"P/E Ratio (trailing): {pe} | Forward P/E: {fwd_pe}\n"
             f"EPS (trailing): {eps}\n"
-            f"Total Revenue: {revenue}\n"
+            f"Total Revenue: {revenue} | Revenue growth: {rev_growth}\n"
             f"Profit Margin: {profit_margin}\n"
             f"Gross Margin: {gross_margin}\n"
             f"Debt/Equity: {debt_to_equity}\n"
+            + (f"Analyst consensus target: {tgt_mean} ({upside:+.1%} vs price) — sell-side view\n"
+               if upside is not None else "")
         )
 
         if financials is not None and not financials.empty:
