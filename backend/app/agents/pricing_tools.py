@@ -361,6 +361,33 @@ def get_recent_news(ticker: str) -> str:
 
 
 @tool
+def get_relative_strength(ticker: str) -> str:
+    """Get the stock's relative strength vs the S&P 500 (SPY) over 1m/3m — is it
+    LEADING or LAGGING the market? Relative strength is a classic factor: leaders
+    tend to keep leading. Distinct from absolute momentum."""
+    try:
+        def _ret(sym, days):
+            h = yf.Ticker(sym).history(period="6mo")
+            if h is None or h.empty or len(h) <= days:
+                return None
+            c = h["Close"]
+            return float(c.iloc[-1] / c.iloc[-days] - 1)
+        out = []
+        for label, days in (("1m", 21), ("3m", 63)):
+            tr, sr = _ret(ticker.upper(), days), _ret("SPY", days)
+            if tr is None or sr is None:
+                continue
+            rs = tr - sr
+            out.append(f"{label}: stock {tr:+.1%} vs SPY {sr:+.1%} → RS {rs:+.1%} "
+                       f"({'leading' if rs > 0 else 'lagging'})")
+        if not out:
+            return f"Relative strength unavailable for {ticker}."
+        return f"Relative strength for {ticker.upper()} vs SPY:\n- " + "\n- ".join(out)
+    except Exception as e:
+        return f"Relative strength unavailable for {ticker}: {e}"
+
+
+@tool
 def get_insider_activity(ticker: str) -> str:
     """Get recent insider (executive/director) buy vs sell activity. Net insider
     BUYING is a documented bullish signal (insiders know their company); heavy
@@ -390,6 +417,7 @@ PRICING_TOOLS = [
     get_fundamentals_snapshot,
     get_price_history,
     get_insider_activity,
+    get_relative_strength,
     get_recent_news,
 ]
 
