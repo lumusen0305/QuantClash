@@ -61,6 +61,15 @@ async def market_analyst_node(state: AnalysisState) -> dict:
         rsi = _compute_rsi(closes)
         macd_val, macd_signal = _compute_macd(closes)
         bb_upper, bb_mid, bb_lower, price = _compute_bollinger(closes)
+        # Extra indicators (trend strength, volume trend, tail risk) so the
+        # technical signal that feeds the consensus is better-informed.
+        try:
+            from app.agents.pricing_tools import _adx, _obv_trend, _cvar
+            adx = _adx(hist)
+            obv = _obv_trend(hist)
+            cvar = _cvar(closes)
+        except Exception:
+            adx = obv = cvar = None
 
         technicals_summary = (
             f"Ticker: {ticker} | Date: {trade_date}\n"
@@ -68,7 +77,9 @@ async def market_analyst_node(state: AnalysisState) -> dict:
             f"RSI(14): {rsi:.1f}\n"
             f"MACD: {macd_val:.4f}, Signal: {macd_signal:.4f}\n"
             f"Bollinger Bands: Upper={bb_upper:.2f}, Mid={bb_mid:.2f}, Lower={bb_lower:.2f}\n"
-            f"Price vs BB: {'above upper' if price > bb_upper else 'below lower' if price < bb_lower else 'within bands'}"
+            f"Price vs BB: {'above upper' if price > bb_upper else 'below lower' if price < bb_lower else 'within bands'}\n"
+            f"ADX(14): {adx} (>25 = strong trend) | OBV trend: {obv}"
+            + (f" | CVaR(5%): {cvar:.1%} daily tail-loss" if cvar is not None else "")
         )
 
         if callback:
