@@ -103,6 +103,30 @@ def record_decision(label: str, ticker: str, as_of_date: str, action: str,
         c.commit()
 
 
+_COST_CACHE: dict[str, float] = {}
+
+
+def _cost_bps_for(ticker: str) -> float:
+    """Per-leg transaction cost (bps) by asset class — spreads vary hugely
+    (Reliable-Eval arXiv 2603.27539 §6.2.2: large-cap ~1-2bps, small-cap
+    10-50, crypto 20-100). Estimated from market cap; cached."""
+    t = ticker.upper()
+    if t in _COST_CACHE:
+        return _COST_CACHE[t]
+    bps = 10.0
+    try:
+        if t.endswith("-USD"):
+            bps = 30.0  # crypto
+        else:
+            mc = (yf.Ticker(t).info or {}).get("marketCap")
+            if isinstance(mc, (int, float)) and mc > 0:
+                bps = 2.0 if mc > 1e10 else 5.0 if mc > 2e9 else 15.0
+    except Exception:
+        bps = 10.0
+    _COST_CACHE[t] = bps
+    return bps
+
+
 def _regime(from_date: str, benchmark: str = "SPY") -> dict:
     """Classify the market regime over [from_date, today] via a benchmark, so
     results are read in context (addresses regime-shift blindness, arXiv
@@ -115,7 +139,7 @@ def _regime(from_date: str, benchmark: str = "SPY") -> dict:
     return {"benchmark": benchmark, "benchmark_return": round(fr, 4), "regime": regime}
 
 
-def score(label: str, cost_bps: float = 10.0) -> dict:
+def score(label: str, cost_bps: float | None = None) -> dict:
     """Aggregate metrics for all decisions under `label`, scored vs realized
     forward returns to the latest close.
 
@@ -144,7 +168,7 @@ def score(label: str, cost_bps: float = 10.0) -> dict:
     bh_by_ticker: dict[str, float] = {}  # buy-and-hold: one fwd return per ticker
     scored_rows = []
     earliest = min((as_of for _, as_of, *_ in rows), default=None)
-    round_trip = 2 * (cost_bps / 10000.0)  # both legs
+    cost_legs = []  # track per-leg bps actually applied (for reporting)
     for ticker, as_of, action, conf, ref in rows:
         s = cache.setdefault(ticker, _closes(ticker))
         fr = forward_return(ticker, as_of, s)
@@ -156,7 +180,10 @@ def score(label: str, cost_bps: float = 10.0) -> dict:
         if action in ("BUY", "SELL"):
             directional += 1
             favour = fr if action == "BUY" else -fr
-            net = favour - round_trip  # net of round-trip transaction cost
+            # per-leg cost: explicit override, else auto by asset class
+            leg = cost_bps if isinstance(cost_bps, (int, float)) else _cost_bps_for(ticker)
+            cost_legs.append(leg)
+            net = favour - 2 * (leg / 10000.0)  # net of round-trip transaction cost
             if favour > 0:
                 wins += 1
             gross_returns.append(favour)
@@ -209,7 +236,8 @@ def score(label: str, cost_bps: float = 10.0) -> dict:
         "buy_hold_return": round(buy_hold, 4) if buy_hold is not None else None,
         "excess_vs_buyhold": round(excess, 4) if excess is not None else None,
         "beats_buy_hold": (excess > 0) if excess is not None else None,
-        "cost_bps_per_leg": cost_bps,
+        "cost_bps_per_leg": (round(sum(cost_legs) / len(cost_legs), 1) if cost_legs else cost_bps),
+        "cost_model": ("flat" if isinstance(cost_bps, (int, float)) else "auto-by-asset-class"),
         "window": _regime(earliest) if earliest else None,
         "decisions": scored_rows,
     }
