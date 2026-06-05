@@ -34,6 +34,28 @@ adapted, implemented, and verified. This maps paper → module → how to verify
 | Portfolio builder: conviction / risk-parity / half-Kelly weighting, correlation-aware diversification | AlphaAgents (2508.11152) | `data/portfolio_builder.py`, `POST /workflows/portfolio` |
 | Top-down market regime gate (SPY trend+vol → exposure scalar) | HedgeAgents / FinCon | `data/market_regime.py` |
 
+## Screeners & strategies (Discovery tabs)
+
+| Capability | Where |
+|---|---|
+| Multi-factor rank (Value/Momentum/Quality/Low-Vol/52w-high) | `data/factors.py`, `POST /screener/factors`, Discovery "Factor Rank" |
+| Sector rotation (11 SPDR ETFs by momentum, risk-on/off tilt) | `data/sectors.py`, `GET /screener/sectors`, Discovery "Sectors" |
+| Pairs trading / stat-arb (correlated pairs, spread z-score) | `data/pairs.py`, `POST /screener/pairs`, Discovery "Pairs" |
+
+## Analyst-layer signal integration
+
+The deterministic signals feed the consensus-driving analysts, not just the pricing agent:
+- `market_analyst`: + ADX, OBV trend, CVaR(5%)
+- `news_analyst`: + QUANT READ (sentiment score, breadth, risk catalysts)
+- `fundamentals_analyst`: + forward P/E, revenue growth, PEG, analyst-target consensus
+
+## Tests
+
+`backend/tests/test_quant_features.py` — dependency-free, 40 assertions
+(`python -m tests.test_quant_features`). Covers consensus, portfolio builder,
+news sentiment, alpha scoring, critique, style levels, verifier gate,
+correlation dampening, cap redistribution, CVaR.
+
 ## Evaluation harness (`app/eval/`, `/eval/*`)
 
 Scores any config by realized **forward returns**, addressing the 5 evaluation
