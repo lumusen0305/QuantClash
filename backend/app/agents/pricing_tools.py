@@ -259,16 +259,60 @@ def get_price_history(ticker: str, period: str = "3mo") -> str:
         return f"History unavailable for {ticker}: {e}"
 
 
+# Headline catalyst lexicon for a deterministic news read (FinRL-DeepSeek
+# arXiv 2502.07393: derive a numeric news risk/sentiment score, not just text).
+_NEWS_NEG = (
+    "lawsuit", "sue", "investigation", "probe", "sec ", "doj", "fraud", "scandal",
+    "downgrade", "cut", "miss", "misses", "warning", "warn", "recall", "bankruptcy",
+    "default", "layoff", "layoffs", "halt", "delist", "subpoena", "fine", "plunge",
+    "slump", "crash", "weak", "loss", "shortfall", "guidance cut", "delay",
+)
+_NEWS_POS = (
+    "beat", "beats", "upgrade", "raises", "raised", "record", "surge", "soar",
+    "approval", "approved", "partnership", "deal", "buyback", "dividend", "wins",
+    "win", "launch", "expansion", "strong", "outperform", "breakthrough", "rally",
+)
+
+
+def _news_sentiment(items: list) -> dict:
+    """Deterministic headline sentiment + risk catalysts. Returns
+    {score:-1..1, pos, neg, risk_flags:[...], n}. Pure — testable offline."""
+    pos = neg = 0
+    flags: list[str] = []
+    for it in items:
+        title = (it.get("title") or "").lower()
+        for kw in _NEWS_POS:
+            if kw in title:
+                pos += 1
+                break
+        hit_neg = next((kw for kw in _NEWS_NEG if kw in title), None)
+        if hit_neg:
+            neg += 1
+            flags.append(hit_neg.strip())
+    total = pos + neg
+    score = round((pos - neg) / total, 2) if total else 0.0
+    return {"score": score, "pos": pos, "neg": neg,
+            "risk_flags": sorted(set(flags)), "n": len(items)}
+
+
 @tool
 def get_recent_news(ticker: str) -> str:
-    """Get recent news headlines for a ticker to check for catalysts or risks
-    that should shift the entry timing or target."""
+    """Get recent news headlines for a ticker PLUS a deterministic sentiment
+    score (-1..1) and any risk catalysts (lawsuit, downgrade, SEC, miss, etc.),
+    so news becomes a quantified signal, not just text."""
     try:
         items = _fetch_yahoo_rss(ticker.upper()) or []
         if not items:
             return f"No recent news for {ticker}."
         lines = [f"- {it.get('title')} ({it.get('publisher','?')})" for it in items[:6]]
-        return f"Recent news for {ticker.upper()}:\n" + "\n".join(lines)
+        sent = _news_sentiment(items)
+        summary = (
+            f"NEWS SENTIMENT: {sent['score']:+.2f} (-1..1) from {sent['n']} headlines "
+            f"({sent['pos']} positive / {sent['neg']} negative)."
+        )
+        if sent["risk_flags"]:
+            summary += " ⚠ RISK CATALYSTS: " + ", ".join(sent["risk_flags"]) + "."
+        return f"Recent news for {ticker.upper()}:\n" + "\n".join(lines) + "\n" + summary
     except Exception as e:
         return f"News unavailable for {ticker}: {e}"
 
