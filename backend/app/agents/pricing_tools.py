@@ -99,6 +99,33 @@ def _cvar(closes: pd.Series, q: float = 0.05) -> float | None:
         return None
 
 
+def _days_to_earnings(ticker: str):
+    """Calendar days until the next earnings date (event risk). Earnings are a
+    major scheduled catalyst — being long/short INTO a print is elevated risk,
+    so the agent should size down or wait. Returns int days, or None."""
+    try:
+        import datetime as _dt
+        cal = yf.Ticker(ticker).calendar
+        dates = None
+        if isinstance(cal, dict):
+            dates = cal.get("Earnings Date")
+        if not dates:
+            return None
+        if not isinstance(dates, (list, tuple)):
+            dates = [dates]
+        today = _dt.date.today()
+        future = []
+        for d in dates:
+            dd = d.date() if hasattr(d, "date") else d
+            if isinstance(dd, _dt.date):
+                delta = (dd - today).days
+                if delta >= 0:
+                    future.append(delta)
+        return min(future) if future else None
+    except Exception:
+        return None
+
+
 def compute_levels(ticker: str) -> dict | None:
     """Deterministic price/technical snapshot. Returns None if no data."""
     try:
@@ -130,6 +157,7 @@ def compute_levels(ticker: str) -> dict | None:
             "adx14": _adx(hist),
             "obv_trend": _obv_trend(hist),
             "cvar5": _cvar(close),
+            "days_to_earnings": _days_to_earnings(ticker),
         }
     except Exception:
         return None
@@ -199,6 +227,9 @@ def levels_text(levels: dict) -> str:
         + (f"- CVaR(5%): {levels['cvar5']:.1%} daily tail-loss — if severe (worse than "
            "-4%), treat downside as high: tighten stops / size down / prefer HOLD.\n"
            if levels.get("cvar5") is not None else "")
+        + (f"- EARNINGS in {levels['days_to_earnings']} days — event risk: entering "
+           "right before a print is a gamble on the report; size down or wait until after.\n"
+           if isinstance(levels.get("days_to_earnings"), int) and levels["days_to_earnings"] <= 10 else "")
     )
 
 
