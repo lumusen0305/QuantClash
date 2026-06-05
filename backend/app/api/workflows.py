@@ -723,7 +723,12 @@ async def build_portfolio_endpoint(req: PortfolioBuildRequest):
         except Exception:
             pass
 
-    portfolio = build_portfolio(decisions, req.risk_style, req.max_positions, req.weighting)
+    # Top-down market regime gate: deploy less total capital when risk-off.
+    from app.data.market_regime import market_regime
+    mr = await loop.run_in_executor(None, market_regime)
+    portfolio = build_portfolio(decisions, req.risk_style, req.max_positions,
+                                req.weighting, mr.get("scalar", 1.0))
+    portfolio["market_regime"] = mr
     portfolio["analyzed"] = len(decisions)
     portfolio["decisions"] = decisions
     return portfolio
