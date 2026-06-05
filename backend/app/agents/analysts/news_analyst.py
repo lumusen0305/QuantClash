@@ -48,10 +48,20 @@ async def news_analyst_node(state: AnalysisState) -> dict:
             news_summary = f"No recent news found for {ticker}."
         else:
             headlines = [f"- [{item['publisher']}] {item['title']}" for item in news_items]
+            # Deterministic sentiment/breadth/risk-catalyst read to anchor the LLM
+            # (FinRL-DeepSeek 2502.07393 + FinGPT 2412.10823).
+            try:
+                from app.agents.pricing_tools import _news_sentiment
+                s = _news_sentiment(news_items)
+                quant = (f"\nQUANT READ: sentiment {s['score']:+.2f} (-1..1), breadth={s['breadth']}"
+                         + (f", risk catalysts: {', '.join(s['risk_flags'])}" if s['risk_flags'] else "")
+                         + (". (low breadth — few headlines, treat as weak)" if s['breadth'] == 'low' else "."))
+            except Exception:
+                quant = ""
             news_summary = (
                 f"Ticker: {ticker} | Date: {trade_date}\n"
                 f"Recent news headlines ({len(headlines)} items):\n"
-                + "\n".join(headlines)
+                + "\n".join(headlines) + quant
             )
 
         if callback:
