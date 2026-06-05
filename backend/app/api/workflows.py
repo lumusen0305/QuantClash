@@ -675,11 +675,20 @@ async def build_portfolio_endpoint(req: PortfolioBuildRequest):
         vol = None
         if lv and lv.get("atr14") and lv.get("current_price"):
             vol = lv["atr14"] / lv["current_price"]
+        # reward/risk from the decision's target/stop vs entry (for Kelly sizing)
+        rr = None
+        entry = fd.get("entry_price") or (lv.get("current_price") if lv else None)
+        tgt, stop = fd.get("target_price"), fd.get("stop_loss")
+        if all(isinstance(x, (int, float)) for x in (entry, tgt, stop)):
+            risk = abs(entry - stop)
+            if risk > 0:
+                rr = abs(tgt - entry) / risk
         decisions.append({
             "ticker": ticker,
             "action": str(fd.get("action", "")).upper(),
             "confidence": fd.get("confidence"),
             "volatility": vol,
+            "reward_risk": rr,
         })
 
     portfolio = build_portfolio(decisions, req.risk_style, req.max_positions, req.weighting)

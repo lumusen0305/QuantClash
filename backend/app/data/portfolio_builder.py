@@ -83,6 +83,21 @@ def build_portfolio(decisions: list, risk_style: str = "balanced",
             vol = d.get("volatility")
             v = abs(float(vol)) if isinstance(vol, (int, float)) and vol else 0.02
             raw[d["ticker"]] = float(d["confidence"]) / max(v, 0.005)
+    elif weighting == "kelly":
+        # Half-Kelly fraction f = W - (1-W)/R, where W = win prob (confidence)
+        # and R = reward/risk ratio (from target/stop if provided, else 2.0).
+        # Half-Kelly (×0.5) is standard to reduce Kelly's known over-betting.
+        raw = {}
+        for d in buys:
+            w = float(d["confidence"])
+            r = float(d.get("reward_risk") or 2.0)
+            r = max(r, 0.25)
+            f = w - (1.0 - w) / r
+            raw[d["ticker"]] = max(0.0, f) * 0.5
+        if sum(raw.values()) <= 0:  # all Kelly fractions <=0 → no edge → cash
+            return {"positions": [], "cash": 1.0, "risk_style": risk_style,
+                    "weighting": weighting,
+                    "note": "Kelly fraction <= 0 for all names (no positive edge) — cash."}
     else:
         raw = {d["ticker"]: float(d["confidence"]) for d in buys}
     total = sum(raw.values()) or 1.0
