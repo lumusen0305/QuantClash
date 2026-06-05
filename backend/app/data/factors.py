@@ -12,10 +12,11 @@ import yfinance as yf
 
 # Composite weights (sum ~1.0). Tunable.
 FACTOR_WEIGHTS = {
-    "value": 0.30,
-    "momentum": 0.30,
-    "quality": 0.25,
+    "value": 0.25,
+    "momentum": 0.25,
+    "quality": 0.20,
     "low_vol": 0.15,
+    "high_proximity": 0.15,  # 52-week-high anchoring (George & Hwang 2004)
 }
 
 
@@ -42,6 +43,9 @@ def _raw_factors(ticker: str) -> dict | None:
         roe = info.get("returnOnEquity")
         margin = info.get("profitMargins")
         d2e = info.get("debtToEquity")
+        wk_high = info.get("fiftyTwoWeekHigh")
+        # 52-week-high proximity: price/52wHigh; near 1 = strong (George-Hwang)
+        high_prox = (price / float(wk_high)) if isinstance(wk_high, (int, float)) and wk_high > 0 else None
 
         return {
             "ticker": ticker,
@@ -54,6 +58,7 @@ def _raw_factors(ticker: str) -> dict | None:
             "margin": float(margin) if isinstance(margin, (int, float)) else None,
             "debt_to_equity": float(d2e) if isinstance(d2e, (int, float)) else None,
             "volatility": vol,
+            "high_proximity": high_prox,
         }
     except Exception:
         return None
@@ -89,6 +94,7 @@ def screen(tickers: list[str], weights: dict | None = None) -> list[dict]:
     margin_s = _rank_norm([r["margin"] for r in raw], higher_better=True)
     d2e_s = _rank_norm([r["debt_to_equity"] for r in raw], higher_better=False)
     vol_s = _rank_norm([r["volatility"] for r in raw], higher_better=False)
+    hp_s = _rank_norm([r.get("high_proximity") for r in raw], higher_better=True)
 
     results = []
     for i, r in enumerate(raw):
@@ -96,11 +102,13 @@ def screen(tickers: list[str], weights: dict | None = None) -> list[dict]:
         momentum = round(mom_s[i], 3)
         quality = round((roe_s[i] + margin_s[i] + d2e_s[i]) / 3, 3)
         low_vol = round(vol_s[i], 3)
+        high_proximity = round(hp_s[i], 3)
         composite = (
             w["value"] * value
             + w["momentum"] * momentum
             + w["quality"] * quality
             + w["low_vol"] * low_vol
+            + w.get("high_proximity", 0) * high_proximity
         )
         results.append({
             "ticker": r["ticker"],
@@ -109,6 +117,7 @@ def screen(tickers: list[str], weights: dict | None = None) -> list[dict]:
             "factors": {
                 "value": value, "momentum": momentum,
                 "quality": quality, "low_vol": low_vol,
+                "high_proximity": high_proximity,
             },
             "raw": {
                 "pe": r["pe"], "pb": r["pb"],
@@ -116,6 +125,7 @@ def screen(tickers: list[str], weights: dict | None = None) -> list[dict]:
                 "roe": r["roe"], "margin": r["margin"],
                 "debt_to_equity": r["debt_to_equity"],
                 "volatility": round(r["volatility"], 4),
+                "high_proximity": round(r["high_proximity"], 3) if r.get("high_proximity") else None,
             },
         })
     results.sort(key=lambda x: x["composite"], reverse=True)

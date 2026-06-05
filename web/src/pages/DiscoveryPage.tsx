@@ -645,6 +645,9 @@ function FactorScreener({ onViewChart }: { onViewChart: (ticker: string) => void
               <FactorBar label={t('factors.momentum')} value={r.factors.momentum} />
               <FactorBar label={t('factors.quality')} value={r.factors.quality} />
               <FactorBar label={t('factors.lowVol')} value={r.factors.low_vol} />
+              {r.factors.high_proximity != null && (
+                <FactorBar label={t('factors.highProx')} value={r.factors.high_proximity} />
+              )}
             </div>
           </div>
         ))}

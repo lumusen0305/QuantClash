@@ -812,7 +812,7 @@ export interface FactorRow {
   ticker: string;
   price: number;
   composite: number;
-  factors: { value: number; momentum: number; quality: number; low_vol: number };
+  factors: { value: number; momentum: number; quality: number; low_vol: number; high_proximity?: number };
   raw: {
     pe: number | null; pb: number | null; momentum_6m: number;
     roe: number | null; margin: number | null;
