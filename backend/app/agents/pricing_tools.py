@@ -322,8 +322,12 @@ def _news_sentiment(items: list) -> dict:
             flags.append(hit_neg.strip())
     total = pos + neg
     score = round((pos - neg) / total, 2) if total else 0.0
+    # Dissemination breadth (FinGPT 2412.10823): widely-covered news moves prices
+    # more; a signal from 1-2 headlines is noisy, not actionable.
+    n = len(items)
+    breadth = "high" if n >= 8 else "normal" if n >= 4 else "low"
     return {"score": score, "pos": pos, "neg": neg,
-            "risk_flags": sorted(set(flags)), "n": len(items)}
+            "risk_flags": sorted(set(flags)), "n": n, "breadth": breadth}
 
 
 @tool
@@ -339,8 +343,10 @@ def get_recent_news(ticker: str) -> str:
         sent = _news_sentiment(items)
         summary = (
             f"NEWS SENTIMENT: {sent['score']:+.2f} (-1..1) from {sent['n']} headlines "
-            f"({sent['pos']} positive / {sent['neg']} negative)."
+            f"({sent['pos']} positive / {sent['neg']} negative), breadth={sent['breadth']}."
         )
+        if sent["breadth"] == "low":
+            summary += " (LOW breadth — few headlines; treat sentiment as weak/noisy.)"
         if sent["risk_flags"]:
             summary += " ⚠ RISK CATALYSTS: " + ", ".join(sent["risk_flags"]) + "."
         return f"Recent news for {ticker.upper()}:\n" + "\n".join(lines) + "\n" + summary
