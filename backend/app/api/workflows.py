@@ -629,6 +629,7 @@ async def buy_recommendations(req: BuyRecRequest):
 class PortfolioBuildRequest(BaseModel):
     tickers: List[str]                       # candidates to analyze + allocate
     risk_style: str = "balanced"             # conservative | balanced | aggressive
+    weighting: str = "conviction"            # conviction | risk_parity
     max_analyze: int = 6
     max_positions: int = 10
     language: Optional[str] = None
@@ -681,7 +682,7 @@ async def build_portfolio_endpoint(req: PortfolioBuildRequest):
             "volatility": vol,
         })
 
-    portfolio = build_portfolio(decisions, req.risk_style, req.max_positions)
+    portfolio = build_portfolio(decisions, req.risk_style, req.max_positions, req.weighting)
     portfolio["analyzed"] = len(decisions)
     portfolio["decisions"] = decisions
     return portfolio

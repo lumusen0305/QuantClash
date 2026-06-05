@@ -45,7 +45,7 @@ def _apply_cap(weights: dict, cap: float, budget: float) -> dict:
 
 
 def build_portfolio(decisions: list, risk_style: str = "balanced",
-                    max_positions: int = 10) -> dict:
+                    max_positions: int = 10, weighting: str = "conviction") -> dict:
     """Construct an allocated portfolio from per-stock decisions.
 
     `decisions`: list of dicts with at least {ticker, action, confidence};
@@ -74,9 +74,17 @@ def build_portfolio(decisions: list, risk_style: str = "balanced",
     # Rank by conviction, cap count.
     buys = sorted(buys, key=lambda d: d["confidence"], reverse=True)[:max_positions]
 
-    # Conviction-proportional weights scaled to the invested fraction.
+    # Base weights: conviction (confidence), optionally risk-parity adjusted so
+    # higher-volatility names get smaller weight (raw = confidence / volatility).
     invested = style["invested"]
-    raw = {d["ticker"]: float(d["confidence"]) for d in buys}
+    if weighting == "risk_parity":
+        raw = {}
+        for d in buys:
+            vol = d.get("volatility")
+            v = abs(float(vol)) if isinstance(vol, (int, float)) and vol else 0.02
+            raw[d["ticker"]] = float(d["confidence"]) / max(v, 0.005)
+    else:
+        raw = {d["ticker"]: float(d["confidence"]) for d in buys}
     total = sum(raw.values()) or 1.0
     weights = {t: invested * v / total for t, v in raw.items()}
     weights = _apply_cap(weights, style["cap"], invested)
@@ -93,5 +101,6 @@ def build_portfolio(decisions: list, risk_style: str = "balanced",
         "cash": cash,
         "cash_pct": round(cash * 100, 1),
         "risk_style": risk_style,
-        "note": f"{len(positions)} positions, conviction-weighted, {risk_style} profile.",
+        "weighting": weighting,
+        "note": f"{len(positions)} positions, {weighting}-weighted, {risk_style} profile.",
     }
