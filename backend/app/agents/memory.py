@@ -80,12 +80,14 @@ class AnalysisMemory:
         return ""
 
     @staticmethod
-    def _score_decision(decision: dict, cur: float) -> dict | None:
+    def _score_decision(decision: dict, cur: float, bench_ret: float | None = None) -> dict | None:
         """Compare a past decision to the current price → realized outcome.
 
-        Returns {pct, correct, hit_target, hit_stop, note} or None if unscored.
-        `pct` is the move since the entry/decision price in the decision's
-        favour (positive = the call was right).
+        Returns {pct, correct, alpha, beat_market, hit_target, hit_stop} or None.
+        `pct` is the favourable move; `alpha` is that move net of the benchmark
+        (SPY) over the same window — a BUY that made +3% while SPY made +10%
+        actually UNDERperformed (alpha < 0), so `beat_market` is the real bar
+        (mirrors TradingAgents' raw+alpha decision log).
         """
         action = (decision.get("action") or "").upper()
         if action not in ("BUY", "SELL"):
@@ -97,6 +99,13 @@ class AnalysisMemory:
         raw = (cur - ref) / ref  # signed move of the underlying
         # For SELL the call is "right" when price falls, so flip the sign
         favour = raw if action == "BUY" else -raw
+        alpha = None
+        beat_market = None
+        if isinstance(bench_ret, (int, float)):
+            # market leg: long SPY for a BUY, out/short for a SELL
+            market_favour = bench_ret if action == "BUY" else -bench_ret
+            alpha = favour - market_favour
+            beat_market = alpha > 0
         tgt = decision.get("target_price")
         stop = decision.get("stop_loss")
         hit_target = None
@@ -108,6 +117,8 @@ class AnalysisMemory:
         return {
             "pct": favour,
             "correct": favour > 0,
+            "alpha": alpha,
+            "beat_market": beat_market,
             "hit_target": hit_target,
             "hit_stop": hit_stop,
         }
@@ -126,10 +137,19 @@ class AnalysisMemory:
         if warn:
             lines.append(warn)
         lines.append(f"Previous analyses for {ticker} (with realized outcomes):")
+        # SPY benchmark series (once) so each past call is scored on ALPHA too.
+        spy = None
+        try:
+            from app.eval.harness import _closes
+            spy = _closes("SPY")
+        except Exception:
+            spy = None
         wins = 0
         scored = 0
         stop_hits = 0
         conf_sum = 0.0
+        beat_market = 0
+        alpha_scored = 0
         for trade_date, decision_json in rows:
             try:
                 decision = json.loads(decision_json)
@@ -141,7 +161,14 @@ class AnalysisMemory:
                 f"entry={decision.get('entry_price')} tgt={decision.get('target_price')} "
                 f"stop={decision.get('stop_loss')}"
             )
-            outcome = self._score_decision(decision, cur) if cur else None
+            bench_ret = None
+            if spy is not None:
+                try:
+                    from app.eval.harness import forward_return
+                    bench_ret = forward_return("SPY", trade_date, spy)
+                except Exception:
+                    bench_ret = None
+            outcome = self._score_decision(decision, cur, bench_ret) if cur else None
             if outcome:
                 scored += 1
                 wins += 1 if outcome["correct"] else 0
@@ -150,6 +177,12 @@ class AnalysisMemory:
                 conf_sum += float(decision.get("confidence") or 0.0)
                 tag = "✓RIGHT" if outcome["correct"] else "✗WRONG"
                 extra = f" → {tag} ({outcome['pct']:+.1%} in favour"
+                if outcome.get("alpha") is not None:
+                    alpha_scored += 1
+                    beat_market += 1 if outcome["beat_market"] else 0
+                    extra += f", α {outcome['alpha']:+.1%} vs SPY"
+                    if not outcome["beat_market"]:
+                        extra += " (UNDERPERFORMED market)"
                 if outcome["hit_target"]:
                     extra += ", hit target"
                 if outcome["hit_stop"]:
@@ -161,9 +194,14 @@ class AnalysisMemory:
         if scored:
             rate = wins / scored
             avg_conf = conf_sum / scored
+            alpha_note = ""
+            if alpha_scored:
+                alpha_note = (f" Beat the market (positive alpha) on only "
+                              f"{beat_market}/{alpha_scored} — directional 'wins' that "
+                              f"trail SPY are not real edge.")
             lines.append(
                 f"TRACK RECORD: {wins}/{scored} prior directional calls were correct "
-                f"({rate:.0%} hit-rate), avg stated confidence {avg_conf:.0%}."
+                f"({rate:.0%} hit-rate), avg stated confidence {avg_conf:.0%}.{alpha_note}"
             )
             critique = self._reflect_critique(scored, wins, rate, avg_conf, stop_hits)
             if critique:
