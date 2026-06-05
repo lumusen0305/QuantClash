@@ -60,15 +60,42 @@ def tech_baseline(ticker: str, as_of_date: str) -> dict | None:
             "ref_price": round(price, 2), "rsi": round(rsi, 1)}
 
 
-def run_baseline_eval(tickers: list, as_of_date: str, label: str = "tech_baseline") -> dict:
-    """Generate + record baseline decisions as-of a date under `label`."""
+def mean_reversion_baseline(ticker: str, as_of_date: str) -> dict | None:
+    """Mean-reversion baseline as-of a date: BUY oversold (RSI<30), SELL
+    overbought (RSI>70), else HOLD. Philosophically opposite to tech_baseline
+    (trend-following) — a useful second benchmark for the agent."""
+    hist = _hist_asof(ticker, as_of_date)
+    if hist is None:
+        return None
+    close = hist["Close"]
+    price = float(close.iloc[-1])
+    rsi = _rsi(close)
+    if rsi < 30:
+        action, conf = "BUY", round(min(0.9, 0.5 + (30 - rsi) / 100), 2)
+    elif rsi > 70:
+        action, conf = "SELL", round(min(0.9, 0.5 + (rsi - 70) / 100), 2)
+    else:
+        action, conf = "HOLD", 0.4
+    return {"ticker": ticker.upper(), "action": action, "confidence": conf,
+            "ref_price": round(price, 2), "rsi": round(rsi, 1)}
+
+
+_STRATEGIES = {"tech_baseline": tech_baseline, "mean_reversion": mean_reversion_baseline}
+
+
+def run_baseline_eval(tickers: list, as_of_date: str, label: str = "tech_baseline",
+                      strategy: str = "tech_baseline") -> dict:
+    """Generate + record baseline decisions as-of a date under `label`.
+    `strategy` selects which deterministic rule to use."""
     from app.eval.harness import record_decision
+    fn = _STRATEGIES.get(strategy, tech_baseline)
     recorded = []
     for t in tickers:
-        d = tech_baseline(t, as_of_date)
+        d = fn(t, as_of_date)
         if not d:
             continue
         record_decision(label, d["ticker"], as_of_date, d["action"],
                         d["confidence"], d["ref_price"])
         recorded.append(d)
-    return {"label": label, "as_of_date": as_of_date, "recorded": len(recorded), "decisions": recorded}
+    return {"label": label, "as_of_date": as_of_date, "strategy": strategy,
+            "recorded": len(recorded), "decisions": recorded}

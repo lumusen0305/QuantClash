@@ -25,6 +25,7 @@ class BaselineRequest(BaseModel):
     tickers: List[str]
     as_of_date: Optional[str] = None  # default: today
     label: str = "tech_baseline"
+    strategy: str = "tech_baseline"   # tech_baseline | mean_reversion
 
 
 @router.post("/baseline")
@@ -32,7 +33,7 @@ async def eval_baseline(req: BaselineRequest):
     as_of = req.as_of_date or date.today().isoformat()
     loop = asyncio.get_event_loop()
     return await loop.run_in_executor(
-        None, lambda: run_baseline_eval(req.tickers, as_of, req.label)
+        None, lambda: run_baseline_eval(req.tickers, as_of, req.label, req.strategy)
     )
 
 
