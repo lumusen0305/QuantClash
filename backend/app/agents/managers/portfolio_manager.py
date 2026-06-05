@@ -40,6 +40,62 @@ def _selective_consensus(signals: list) -> dict:
             "lean": lean, "dir_w": {k: round(v, 2) for k, v in dir_w.items()}}
 
 
+def _verify_decision(decision, levels: dict | None):
+    """Verifier-gated execution (arXiv 2603.27539 §3.2.4): validate the final
+    decision's prices against the live price + action direction BEFORE it ships.
+    Nullify any price that contradicts the action or sits absurdly far from the
+    current price (a hallucination that slipped past the grounding); lower
+    confidence if we had to intervene. Returns a (possibly corrected) decision.
+    """
+    if not levels or not levels.get("current_price"):
+        return decision
+    p = levels["current_price"]
+    action = (getattr(decision, "action", "") or "").upper()
+    if action not in ("BUY", "SELL"):
+        return decision
+
+    def _sane(v):  # within ±60% of current price
+        return isinstance(v, (int, float)) and 0.4 * p <= v <= 1.6 * p
+
+    entry = getattr(decision, "entry_price", None)
+    target = getattr(decision, "target_price", None)
+    stop = getattr(decision, "stop_loss", None)
+    fixes = {}
+    notes = []
+
+    # Absurd distance → hallucination → drop it.
+    for name, v in (("entry_price", entry), ("target_price", target), ("stop_loss", stop)):
+        if v is not None and not _sane(v):
+            fixes[name] = None
+            notes.append(f"{name} ${v} was out of sane range vs ${p:.2f} → dropped")
+
+    # Direction consistency (only check values that survived).
+    t = fixes.get("target_price", target)
+    s = fixes.get("stop_loss", stop)
+    if action == "BUY":
+        if isinstance(t, (int, float)) and t <= p:
+            fixes["target_price"] = None; notes.append("BUY target was not above price → dropped")
+        if isinstance(s, (int, float)) and s >= p:
+            fixes["stop_loss"] = None; notes.append("BUY stop was not below price → dropped")
+    else:  # SELL
+        if isinstance(t, (int, float)) and t >= p:
+            fixes["target_price"] = None; notes.append("SELL target was not below price → dropped")
+        if isinstance(s, (int, float)) and s <= p:
+            fixes["stop_loss"] = None; notes.append("SELL stop was not above price → dropped")
+
+    if not fixes:
+        return decision
+    conf = getattr(decision, "confidence", None)
+    if isinstance(conf, (int, float)):
+        fixes["confidence"] = round(max(0.1, conf * 0.85), 2)  # penalize: it shipped bad numbers
+    reasoning = getattr(decision, "reasoning", "") or ""
+    fixes["reasoning"] = reasoning + "\n[verifier corrected: " + "; ".join(notes) + "]"
+    try:
+        return decision.model_copy(update=fixes)
+    except Exception:
+        return decision
+
+
 async def portfolio_manager_node(state: AnalysisState) -> dict:
     ticker = state["ticker"]
     trade_date = state["trade_date"]
@@ -214,6 +270,10 @@ async def portfolio_manager_node(state: AnalysisState) -> dict:
                 )
             else:
                 raise
+
+        # Verifier gate: correct/nullify prices that contradict the action or
+        # are absurdly far from the live price before shipping + storing.
+        decision = _verify_decision(decision, levels)
 
         # Store in memory
         try:
