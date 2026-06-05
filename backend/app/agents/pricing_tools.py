@@ -297,11 +297,17 @@ _NEWS_NEG = (
     "downgrade", "cut", "miss", "misses", "warning", "warn", "recall", "bankruptcy",
     "default", "layoff", "layoffs", "halt", "delist", "subpoena", "fine", "plunge",
     "slump", "crash", "weak", "loss", "shortfall", "guidance cut", "delay",
+    "tumble", "sink", "drop", "selloff", "sell-off", "bearish", "underperform",
+    "antitrust", "breach", "hack", "data breach", "resign", "step down", "short seller",
+    "dilution", "going concern", "impairment", "writedown", "write-down", "slash",
 )
 _NEWS_POS = (
     "beat", "beats", "upgrade", "raises", "raised", "record", "surge", "soar",
     "approval", "approved", "partnership", "deal", "buyback", "dividend", "wins",
     "win", "launch", "expansion", "strong", "outperform", "breakthrough", "rally",
+    "jump", "soars", "tops", "exceeds", "bullish", "accelerate", "milestone",
+    "contract", "guidance raise", "price target raised", "acquisition", "all-time high",
+    "robust", "momentum", "profit", "margin expansion", "double", "boost",
 )
 
 
