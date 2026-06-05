@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import styles from './WorkspacePage.module.css';
 import { QuickAddWatchlist } from '../components/QuickAddWatchlist';
+import { EvalPanel } from '../components/EvalPanel';
 import { MiniMarkdown } from '../components/MiniMarkdown';
 import {
   fetchActionQueue,
@@ -646,6 +647,9 @@ export function WorkspacePage({ onNavigate }: WorkspacePageProps = {}) {
           </>
         )}
       </Section>
+
+      {/* ── Strategy Eval (forward-return backtest of recorded configs) ── */}
+      <EvalPanel />
 
       {/* ── Action Queue ── */}
       <Section

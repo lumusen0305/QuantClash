@@ -509,6 +509,39 @@ export const buildPortfolio = (
     .post<PortfolioBuildResult>('/workflows/portfolio', { tickers, risk_style, language, max_analyze: 6 })
     .then((r) => r.data);
 
+// ─── Strategy evaluation harness ─────────────────────────────────────────────
+
+export interface EvalScore {
+  label: string;
+  n: number;
+  directional?: number;
+  holds?: number;
+  hold_rate?: number | null;
+  hit_rate?: number | null;
+  avg_confidence?: number | null;
+  calibration_gap?: number | null;
+  strategy_return?: number | null;
+  strategy_return_std?: number | null;
+  return_over_risk?: number | null;
+  buy_hold_return?: number | null;
+  excess_vs_buyhold?: number | null;
+  beats_buy_hold?: boolean | null;
+  cost_bps_per_leg?: number;
+  cost_model?: string;
+  window?: { regime?: string; benchmark_return?: number | null };
+  note?: string | null;
+}
+
+export const fetchEvalLabels = () =>
+  api.get<{ labels: { label: string; count: number }[] }>('/eval/labels').then((r) => r.data.labels);
+
+export const fetchEvalScore = (label: string) =>
+  api.get<EvalScore>('/eval/score', { params: { label } }).then((r) => r.data);
+
+export const fetchEvalCompare = (a: string, b: string) =>
+  api.get<{ a: EvalScore; b: EvalScore; better: Record<string, string | null> }>(
+    '/eval/compare', { params: { a, b } }).then((r) => r.data);
+
 export const fetchActionQueue = (data: {
   watchlist: WatchItem[];
   positions?: Position[];
