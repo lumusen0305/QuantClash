@@ -48,6 +48,7 @@ async def fundamentals_analyst_node(state: AnalysisState) -> dict:
         industry = info.get("industry", "N/A")
         fwd_pe = info.get("forwardPE", "N/A")
         rev_growth = info.get("revenueGrowth", "N/A")
+        peg = info.get("trailingPegRatio") or info.get("pegRatio") or "N/A"  # growth-adjusted P/E
         # Sell-side analyst consensus target vs price — a documented signal
         cur = info.get("currentPrice") or info.get("regularMarketPrice")
         tgt_mean = info.get("targetMeanPrice")
@@ -60,7 +61,7 @@ async def fundamentals_analyst_node(state: AnalysisState) -> dict:
             f"Sector: {sector} | Industry: {industry}\n"
             f"Market Cap: {market_cap}\n"
             f"Beta: {beta}\n"
-            f"P/E Ratio (trailing): {pe} | Forward P/E: {fwd_pe}\n"
+            f"P/E Ratio (trailing): {pe} | Forward P/E: {fwd_pe} | PEG: {peg}\n"
             f"EPS (trailing): {eps}\n"
             f"Total Revenue: {revenue} | Revenue growth: {rev_growth}\n"
             f"Profit Margin: {profit_margin}\n"
