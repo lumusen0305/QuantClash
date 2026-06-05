@@ -691,6 +691,38 @@ async def build_portfolio_endpoint(req: PortfolioBuildRequest):
             "reward_risk": rr,
         })
 
+    # Correlation-aware: avg pairwise correlation of each BUY name vs the others
+    # (3-month daily returns), so the builder can dampen clustered/redundant bets.
+    buy_syms = [d["ticker"] for d in decisions if d["action"] == "BUY"]
+    if len(buy_syms) >= 2:
+        def _corr_map():
+            import pandas as pd
+            import yfinance as yf
+            series = {}
+            for t in buy_syms:
+                try:
+                    h = yf.Ticker(t).history(period="3mo")
+                    if h is not None and not h.empty:
+                        series[t] = h["Close"].pct_change().dropna().reset_index(drop=True)
+                except Exception:
+                    pass
+            if len(series) < 2:
+                return {}
+            cm = pd.DataFrame(series).dropna().corr()
+            out = {}
+            for t in cm.index:
+                others = [cm.loc[t, o] for o in cm.columns if o != t]
+                if others:
+                    out[t] = round(float(sum(others) / len(others)), 3)
+            return out
+        try:
+            corr = await loop.run_in_executor(None, _corr_map)
+            for d in decisions:
+                if d["ticker"] in corr:
+                    d["avg_corr"] = corr[d["ticker"]]
+        except Exception:
+            pass
+
     portfolio = build_portfolio(decisions, req.risk_style, req.max_positions, req.weighting)
     portfolio["analyzed"] = len(decisions)
     portfolio["decisions"] = decisions

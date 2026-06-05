@@ -100,6 +100,16 @@ def build_portfolio(decisions: list, risk_style: str = "balanced",
                     "note": "Kelly fraction <= 0 for all names (no positive edge) — cash."}
     else:
         raw = {d["ticker"]: float(d["confidence"]) for d in buys}
+
+    # Correlation-aware diversification: dampen names that are highly correlated
+    # with the rest of the book (avg pairwise correlation), so the portfolio
+    # isn't secretly one big bet on the same factor (HedgeAgents-style hedging).
+    corr_by = {d["ticker"]: d.get("avg_corr") for d in buys}
+    if any(isinstance(c, (int, float)) for c in corr_by.values()):
+        for t in list(raw):
+            c = corr_by.get(t)
+            if isinstance(c, (int, float)):
+                raw[t] *= 1.0 / (1.0 + max(0.0, c))  # corr 0 → ×1, corr 1 → ×0.5
     total = sum(raw.values()) or 1.0
     weights = {t: invested * v / total for t, v in raw.items()}
     weights = _apply_cap(weights, style["cap"], invested)
