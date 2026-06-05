@@ -542,6 +542,13 @@ export interface SectorRotation {
 export const fetchSectorRotation = () =>
   api.get<SectorRotation>('/screener/sectors').then((r) => r.data);
 
+export interface PairRow {
+  pair: string; correlation: number; spread_z: number; trade: string; long: string; short: string;
+}
+export const fetchPairs = (tickers?: string[]) =>
+  api.post<{ pairs: PairRow[]; note?: string }>('/screener/pairs', { tickers })
+    .then((r) => r.data);
+
 export const fetchEvalLabels = () =>
   api.get<{ labels: { label: string; count: number }[] }>('/eval/labels').then((r) => r.data.labels);
 

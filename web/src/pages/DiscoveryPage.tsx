@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { RefreshCw } from 'lucide-react';
-import { fetchMarketMovers, runScreen, fetchScreenerFields, runFactorScreen, fetchSectorRotation, type ScreenerFilters, type ScreenerResult, type ScreenerRow, type FactorRow, type SectorRotation } from '../api/client';
+import { fetchMarketMovers, runScreen, fetchScreenerFields, runFactorScreen, fetchSectorRotation, fetchPairs, type ScreenerFilters, type ScreenerResult, type ScreenerRow, type FactorRow, type SectorRotation, type PairRow } from '../api/client';
 import { useI18n } from '../i18n/context';
 import { addToWatchlist, isInWatchlist } from '../lib/workspace';
 import styles from './DiscoveryPage.module.css';
@@ -33,7 +33,7 @@ interface SectorRect {
   x: number; y: number; width: number; height: number; sector: SectorGroup;
 }
 
-type DiscoverTab = 'heatmap' | 'screener' | 'factors' | 'sectors';
+type DiscoverTab = 'heatmap' | 'screener' | 'factors' | 'sectors' | 'pairs';
 
 // ─── Sector Mapping ───────────────────────────────────────────────────────────
 
@@ -694,6 +694,36 @@ function SectorRotationView() {
   );
 }
 
+// ── Pairs-trading view ──
+function PairsView() {
+  const { t } = useI18n();
+  const [pairs, setPairs] = useState<PairRow[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [note, setNote] = useState<string>('');
+  const load = useCallback(async () => {
+    setLoading(true);
+    try { const r = await fetchPairs(); setPairs(r.pairs); setNote(r.note || ''); }
+    catch { setNote('failed'); }
+    finally { setLoading(false); }
+  }, []);
+  useEffect(() => { load(); }, [load]);
+  return (
+    <div style={{ padding: '12px 16px', overflowY: 'auto' }}>
+      <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 8 }}>{t('discover.pairsHint')}</div>
+      {loading && <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{t('factors.scoring')}</div>}
+      {!loading && pairs.length === 0 && <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{note}</div>}
+      {pairs.map((p) => (
+        <div key={p.pair} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 0', borderBottom: '1px solid var(--border)' }}>
+          <span style={{ width: 110, fontWeight: 700 }}>{p.pair}</span>
+          <span style={{ width: 80, fontSize: 12, color: 'var(--text-secondary)' }}>ρ {p.correlation}</span>
+          <span style={{ width: 70, fontSize: 12, color: Math.abs(p.spread_z) >= 2 ? '#d97706' : 'var(--text-secondary)' }}>z {p.spread_z}</span>
+          <span style={{ flex: 1, fontSize: 13 }}>{p.trade}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 interface DiscoveryPageProps { onSelectTicker: (ticker: string) => void; }
 const REFRESH_MS = 5 * 60 * 1_000;
 
@@ -773,7 +803,12 @@ export function DiscoveryPage({ onSelectTicker }: DiscoveryPageProps) {
           <button
             className={`${styles.segBtn} ${tab === 'sectors' ? styles.segBtnActive : ''}`}
             onClick={() => setTab('sectors')}>
-            {t('discover.sectors')}
+            {t('discover.sectorsTab')}
+          </button>
+          <button
+            className={`${styles.segBtn} ${tab === 'pairs' ? styles.segBtnActive : ''}`}
+            onClick={() => setTab('pairs')}>
+            {t('discover.pairs')}
           </button>
         </div>
 
@@ -820,6 +855,9 @@ export function DiscoveryPage({ onSelectTicker }: DiscoveryPageProps) {
 
       {/* ── Sector rotation tab ── */}
       {tab === 'sectors' && <SectorRotationView />}
+
+      {/* ── Pairs-trading tab ── */}
+      {tab === 'pairs' && <PairsView />}
     </div>
   );
 }
