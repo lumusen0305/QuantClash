@@ -134,6 +134,7 @@ def score(label: str, cost_bps: float = 10.0) -> dict:
 
     cache: dict[str, pd.Series | None] = {}
     directional = 0
+    holds = 0
     wins = 0
     conf_sum = 0.0
     conf_n = 0
@@ -167,6 +168,8 @@ def score(label: str, cost_bps: float = 10.0) -> dict:
                 conf_n += 1
             item["correct"] = favour > 0
             item["net_return"] = round(net, 4)
+        elif action == "HOLD":
+            holds += 1
         scored_rows.append(item)
 
     hit_rate = (wins / directional) if directional else None
@@ -189,6 +192,11 @@ def score(label: str, cost_bps: float = 10.0) -> dict:
         "label": label,
         "n": len(rows),
         "directional": directional,
+        "holds": holds,
+        "hold_rate": round(holds / len(rows), 3) if rows else None,
+        "note": ("all/mostly HOLD — no directional bets to score; in a flat/uncertain "
+                 "regime this avoids losses but forgoes gains (compare vs buy_hold)."
+                 if directional == 0 else None),
         "hit_rate": round(hit_rate, 3) if hit_rate is not None else None,
         "avg_confidence": round(avg_conf, 3) if avg_conf is not None else None,
         "calibration_gap": round(abs(avg_conf - hit_rate), 3)
