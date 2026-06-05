@@ -81,9 +81,35 @@ def test_style_levels():
     check("HOLD -> None", style_levels(lv, "HOLD", "balanced") is None)
 
 
+def test_verifier_gate():
+    from app.agents.managers.portfolio_manager import _verify_decision
+    from app.agents.schemas import FinalDecision
+    lv = {"current_price": 224.0}
+    bad = _verify_decision(FinalDecision(action="BUY", confidence=0.8, reasoning="x",
+            entry_price=224, target_price=900, stop_loss=240, time_horizon="1M"), lv)
+    check("verifier nulls absurd target", bad.target_price is None)
+    check("verifier nulls inverted stop", bad.stop_loss is None)
+    check("verifier penalizes confidence", bad.confidence < 0.8)
+    good = _verify_decision(FinalDecision(action="BUY", confidence=0.7, reasoning="x",
+            entry_price=224, target_price=250, stop_loss=212, time_horizon="1M"), lv)
+    check("verifier leaves clean decision", good.target_price == 250 and good.confidence == 0.7)
+
+
+def test_correlation_dampening():
+    from app.data.portfolio_builder import build_portfolio
+    # same confidence; A,B highly correlated, C uncorrelated → C should get more
+    decs = [{"ticker": "A", "action": "BUY", "confidence": 0.7, "avg_corr": 0.9},
+            {"ticker": "B", "action": "BUY", "confidence": 0.7, "avg_corr": 0.9},
+            {"ticker": "C", "action": "BUY", "confidence": 0.7, "avg_corr": 0.1}]
+    p = build_portfolio(decs, "aggressive", weighting="conviction")
+    wts = {x["ticker"]: x["weight"] for x in p["positions"]}
+    check("uncorrelated name weighted higher", wts["C"] > wts["A"])
+
+
 def main():
     for fn in [test_selective_consensus, test_portfolio_builder, test_news_sentiment,
-               test_score_decision_alpha, test_reflect_critique, test_style_levels]:
+               test_score_decision_alpha, test_reflect_critique, test_style_levels,
+               test_verifier_gate, test_correlation_dampening]:
         try:
             fn()
         except Exception as e:
