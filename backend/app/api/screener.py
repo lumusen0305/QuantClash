@@ -147,6 +147,24 @@ class FactorScreenRequest(BaseModel):
     limit: int = 20                       # top-N to return
 
 
+class PairsRequest(BaseModel):
+    tickers: Optional[List[str]] = None   # defaults to universe
+    min_corr: float = 0.7
+    z_threshold: float = 2.0
+    top: int = 10
+
+
+@router.post("/pairs")
+async def pairs_screen(req: PairsRequest):
+    """Statistical-arbitrage screener: correlated pairs with a stretched spread."""
+    from app.data.pairs import find_pairs
+    universe = [t.upper() for t in (req.tickers or UNIVERSE) if t][:40]
+    loop = asyncio.get_event_loop()
+    return await loop.run_in_executor(
+        None, lambda: find_pairs(universe, req.min_corr, req.z_threshold, req.top)
+    )
+
+
 @router.post("/factors")
 async def factor_screen(req: FactorScreenRequest):
     """Rank stocks by a weighted Value+Momentum+Quality+Low-Vol composite.
