@@ -525,6 +525,7 @@ export interface EvalScore {
   return_over_risk?: number | null;
   sortino?: number | null;
   brier_score?: number | null;
+  confidence_discrimination?: { discrimination?: number | null } | null;
   buy_hold_return?: number | null;
   excess_vs_buyhold?: number | null;
   beats_buy_hold?: boolean | null;

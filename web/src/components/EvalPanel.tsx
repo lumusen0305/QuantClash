@@ -169,6 +169,7 @@ export function EvalPanel() {
             <Stat label="Beats B&H" v={beat == null ? '—' : beat ? '✓ yes' : '✗ no'} pos={!!beat} />
             <Stat label="Calib. gap" v={pct(score.calibration_gap)} />
             <Stat label="Brier" v={typeof score.brier_score === 'number' ? score.brier_score.toFixed(3) : '—'} pos={typeof score.brier_score === 'number' ? score.brier_score < 0.25 : undefined} />
+            <Stat label="Conf. discrim" v={typeof score.confidence_discrimination?.discrimination === 'number' ? score.confidence_discrimination.discrimination.toFixed(2) : '—'} pos={typeof score.confidence_discrimination?.discrimination === 'number' ? score.confidence_discrimination.discrimination > 0 : undefined} />
             <Stat label="Return/risk" v={typeof score.return_over_risk === 'number' ? score.return_over_risk.toFixed(2) : '—'} />
             <Stat label="Sortino" v={typeof score.sortino === 'number' ? score.sortino.toFixed(2) : '—'} pos={typeof score.sortino === 'number' ? score.sortino >= 0 : undefined} />
             <Stat label="Regime" v={score.window?.regime ?? '—'} />
