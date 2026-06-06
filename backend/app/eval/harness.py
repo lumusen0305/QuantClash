@@ -335,10 +335,16 @@ def compare(label_a: str, label_b: str) -> dict:
 
 def _tally_wins(better: dict, label_a: str, label_b: str):
     """Count per-metric wins for each label (ignoring ties/None) and pick the
-    overall winner. Pure — separated from compare() so it's testable offline."""
+    overall winner. Pure — separated from compare() so it's testable offline.
+    If NO metric was comparable (all None — e.g. a cohort with only HOLDs has no
+    scorable returns), report 'incomparable' rather than a misleading 'tie'."""
+    comparable = sum(1 for v in better.values() if v is not None)
     wins_a = sum(1 for v in better.values() if v == label_a)
     wins_b = sum(1 for v in better.values() if v == label_b)
-    overall = (label_a if wins_a > wins_b else label_b if wins_b > wins_a else "tie")
+    if comparable == 0:
+        overall = "incomparable (no scorable decisions in one/both cohorts)"
+    else:
+        overall = (label_a if wins_a > wins_b else label_b if wins_b > wins_a else "tie")
     return wins_a, wins_b, overall
 
 

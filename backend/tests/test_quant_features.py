@@ -254,6 +254,9 @@ def test_tally_wins():
     check("ignores tie/None", overall == "A")
     wa2, wb2, ov2 = T({"m1": "A", "m2": "B"}, "A", "B")
     check("even -> tie", ov2 == "tie")
+    # all-None (e.g. an all-HOLD cohort has no scorable metrics) -> incomparable, not tie
+    _, _, ov3 = T({"m1": None, "m2": None}, "A", "B")
+    check("all-None -> incomparable", ov3.startswith("incomparable"))
 
 
 def test_verdict():
