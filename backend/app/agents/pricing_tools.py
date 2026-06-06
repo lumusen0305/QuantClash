@@ -266,7 +266,9 @@ def get_fundamentals_snapshot(ticker: str) -> str:
         f"- market cap: {g('marketCap')}\n"
         f"- profit margin: {g('profitMargins')}, revenue growth: {g('revenueGrowth')}\n"
         f"- 52w low / high: {g('fiftyTwoWeekLow')} / {g('fiftyTwoWeekHigh')}\n"
-        f"- analyst target mean: {g('targetMeanPrice')} (low {g('targetLowPrice')}, high {g('targetHighPrice')})"
+        f"- analyst target mean: {g('targetMeanPrice')} (low {g('targetLowPrice')}, high {g('targetHighPrice')})\n"
+        f"- short interest: {g('shortPercentOfFloat')} of float, {g('shortRatio')} days-to-cover "
+        "(high = squeeze potential / crowded bearish bet)"
     )
 
 
