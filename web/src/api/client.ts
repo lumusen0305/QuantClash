@@ -565,8 +565,13 @@ export interface LeaderRow {
   strategy_return?: number | null; excess_vs_buyhold?: number | null;
   beats_buy_hold?: boolean | null; sortino?: number | null; regime?: string | null;
 }
+export interface SelectionBias {
+  trials?: number; winner?: string;
+  winner_p_approx?: number | null; winner_p_bonferroni?: number | null; note?: string;
+}
 export const fetchEvalLeaderboard = (metric = 'excess_vs_buyhold') =>
-  api.get<{ metric: string; ranked: LeaderRow[]; pending: { label: string }[] }>(
+  api.get<{ metric: string; ranked: LeaderRow[]; pending: { label: string }[];
+            selection_bias?: SelectionBias | null }>(
     '/eval/leaderboard', { params: { metric } }).then((r) => r.data);
 
 export const fetchEvalCompare = (a: string, b: string) =>

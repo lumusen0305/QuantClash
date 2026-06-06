@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { fetchEvalLabels, fetchEvalScore, fetchEvalCompare, fetchEvalLeaderboard, runRollingBacktest, type EvalScore, type LeaderRow, type RollingBacktest } from '../api/client';
+import { fetchEvalLabels, fetchEvalScore, fetchEvalCompare, fetchEvalLeaderboard, runRollingBacktest, type EvalScore, type LeaderRow, type RollingBacktest, type SelectionBias } from '../api/client';
 
 // Compact strategy-evaluation panel: pick a recorded config label and see how
 // its decisions performed on realized forward returns (net-of-cost, vs buy-hold,
@@ -18,6 +18,7 @@ export function EvalPanel() {
   const [cmp, setCmp] = useState<Record<string, string | null> | null>(null);
   const [cmpOverall, setCmpOverall] = useState<{ overall?: string; wins?: Record<string, number> } | null>(null);
   const [board, setBoard] = useState<LeaderRow[] | null>(null);
+  const [boardBias, setBoardBias] = useState<SelectionBias | null>(null);
   const [showBoard, setShowBoard] = useState(false);
   const [roll, setRoll] = useState<RollingBacktest | null>(null);
   const [rollStrat, setRollStrat] = useState('tech_baseline');
@@ -73,7 +74,7 @@ export function EvalPanel() {
     <div style={{ border: '1px solid var(--border)', borderRadius: 10, padding: 14, marginTop: 12 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
         <strong style={{ fontSize: 14 }}>Strategy Eval (forward-return backtest)
-          <button onClick={async () => { setShowBoard(v => !v); if (!board) { try { setBoard((await fetchEvalLeaderboard()).ranked); } catch { /* */ } } }}
+          <button onClick={async () => { setShowBoard(v => !v); if (!board) { try { const lb = await fetchEvalLeaderboard(); setBoard(lb.ranked); setBoardBias(lb.selection_bias ?? null); } catch { /* */ } } }}
             style={{ marginLeft: 10, padding: '3px 8px', borderRadius: 6, fontSize: 11, background: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: '1px solid var(--border)', cursor: 'pointer' }}>
             🏆 {showBoard ? 'hide' : 'leaderboard'}
           </button>
@@ -125,6 +126,15 @@ export function EvalPanel() {
               <span style={{ width: 44, textAlign: 'right' }}>{r.beats_buy_hold ? '✓BH' : '✗'}</span>
             </div>
           ))}
+          {boardBias && typeof boardBias.trials === 'number' && boardBias.trials > 1 && (
+            <div style={{ marginTop: 6, padding: 6, borderRadius: 6, background: 'var(--bg-secondary,var(--bg-tertiary))', color: 'var(--text-secondary)', fontSize: 11 }}>
+              ⚠ Selection bias: winner picked from {boardBias.trials} trials.
+              {typeof boardBias.winner_p_bonferroni === 'number' && (
+                <> Winner p (Bonferroni-adjusted) = <strong>{boardBias.winner_p_bonferroni.toFixed(3)}</strong>
+                {boardBias.winner_p_bonferroni > 0.05 ? ' — not significant after adjustment.' : ' — survives adjustment.'}</>
+              )}
+            </div>
+          )}
         </div>
       )}
       <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid var(--border)' }}>
