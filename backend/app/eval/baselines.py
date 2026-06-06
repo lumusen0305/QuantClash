@@ -106,6 +106,34 @@ _STRATEGIES = {"tech_baseline": tech_baseline, "mean_reversion": mean_reversion_
                "momentum": momentum_baseline}
 
 
+def rolling_backtest(tickers: list, start_date: str, end_date: str,
+                     strategy: str = "tech_baseline", step_days: int = 30) -> dict:
+    """FINSABER-style rolling backtest (arXiv 2505.07078): run a deterministic
+    strategy as-of many step-dates across a long horizon, score each window, and
+    aggregate — fighting data-snooping / single-window flukes. Auto-generates the
+    cohorts instead of seeding each by hand. Deterministic strategies only
+    (leakage-free as-of); the LLM agent has news look-ahead so it's excluded."""
+    import datetime as _dt
+    from app.eval.harness import aggregate
+    try:
+        sd = _dt.date.fromisoformat(start_date)
+        ed = _dt.date.fromisoformat(end_date)
+    except Exception:
+        return {"error": "bad dates (YYYY-MM-DD)"}
+    labels = []
+    d = sd
+    while d <= ed:
+        lab = f"roll_{strategy}_{d.isoformat()}"
+        run_baseline_eval(tickers, d.isoformat(), lab, strategy)
+        labels.append(lab)
+        d = d + _dt.timedelta(days=max(1, step_days))
+    agg = aggregate(labels)
+    agg["strategy"] = strategy
+    agg["windows_generated"] = len(labels)
+    agg["step_days"] = step_days
+    return agg
+
+
 def run_factor_cohort(tickers: list, as_of_date: str, label: str = "factor_cohort",
                       top_n: int = 5) -> dict:
     """Record the multi-factor screener's top-N picks as a BUY cohort for

@@ -37,6 +37,28 @@ async def eval_baseline(req: BaselineRequest):
     )
 
 
+class RollingBacktestRequest(BaseModel):
+    tickers: Optional[List[str]] = None  # defaults to universe
+    start_date: str
+    end_date: str
+    strategy: str = "tech_baseline"      # tech_baseline | mean_reversion | momentum
+    step_days: int = 30
+
+
+@router.post("/rolling-backtest")
+async def eval_rolling_backtest(req: RollingBacktestRequest):
+    """FINSABER-style rolling backtest: run a deterministic strategy across many
+    step-dates and aggregate (one call → multi-window robustness verdict)."""
+    from app.eval.baselines import rolling_backtest
+    from app.api.discovery import WATCHLIST
+    universe = req.tickers or WATCHLIST
+    loop = asyncio.get_event_loop()
+    return await loop.run_in_executor(
+        None, lambda: rolling_backtest(universe, req.start_date, req.end_date,
+                                       req.strategy, req.step_days)
+    )
+
+
 class FactorCohortRequest(BaseModel):
     tickers: Optional[List[str]] = None  # defaults to universe
     as_of_date: Optional[str] = None
