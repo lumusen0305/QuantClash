@@ -149,11 +149,21 @@ def test_contamination_flag():
     check("bad date safe", P("not-a-date", cutoff="2025-12-01") is False)
 
 
+def test_binomial_sf():
+    # Exact one-sided binomial test used to flag luck vs skill in aggregate().
+    from app.eval.harness import _binomial_sf as B
+    check("0 of 0 -> None", B(0, 0) is None)
+    check("all wins small p", B(5, 5) is not None and B(5, 5) < 0.04)  # 0.5^5 = 0.03125
+    check("half wins ~ high p", B(3, 6) > 0.5)
+    check("monotonic: more wins => smaller p", B(5, 6) < B(3, 6))
+    check("clamps k>n", abs(B(9, 5) - B(5, 5)) < 1e-9)
+
+
 def main():
     for fn in [test_selective_consensus, test_portfolio_builder, test_news_sentiment,
                test_score_decision_alpha, test_reflect_critique, test_style_levels,
                test_verifier_gate, test_correlation_dampening, test_apply_cap, test_cvar,
-               test_no_oversuppression, test_contamination_flag]:
+               test_no_oversuppression, test_contamination_flag, test_binomial_sf]:
         try:
             fn()
         except Exception as e:

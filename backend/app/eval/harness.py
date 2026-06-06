@@ -301,6 +301,17 @@ def compare(label_a: str, label_b: str) -> dict:
     }
 
 
+def _binomial_sf(k: int, n: int, p: float = 0.5) -> float | None:
+    """Exact one-sided binomial survival P(X >= k) for X~Binom(n, p). Used to test
+    whether a strategy beats buy-and-hold more often than a coin flip would. Pure
+    (math.comb), no scipy. Returns None if n == 0."""
+    import math
+    if n <= 0:
+        return None
+    k = max(0, min(k, n))
+    return sum(math.comb(n, i) * p ** i * (1 - p) ** (n - i) for i in range(k, n + 1))
+
+
 def aggregate(labels: list) -> dict:
     """Rolling-window robustness (Reliable-Eval arXiv 2603.27539 §4.6 #3):
     aggregate the same strategy scored across multiple non-overlapping window
@@ -321,15 +332,22 @@ def aggregate(labels: list) -> dict:
                 "n": len(vals)}
 
     beats = sum(1 for s in usable if s.get("beats_buy_hold") is True)
+    n = len(usable)
+    p = _binomial_sf(beats, n)  # P(>= beats wins | coin-flip null)
     return {
         "labels": labels,
-        "windows": len(usable),
+        "windows": n,
         "hit_rate": _ms("hit_rate"),
         "strategy_return": _ms("strategy_return"),
         "excess_vs_buyhold": _ms("excess_vs_buyhold"),
         "calibration_gap": _ms("calibration_gap"),
-        "beats_buy_hold_windows": f"{beats}/{len(usable)}",
-        "robust": beats == len(usable) and len(usable) >= 2,  # beat BH in EVERY window
+        "beats_buy_hold_windows": f"{beats}/{n}",
+        "robust": beats == n and n >= 2,  # beat BH in EVERY window
+        # Exact one-sided binomial test vs a 50/50 coin flip: is beating BH this
+        # often distinguishable from luck? (Reliable-Eval: point estimates at small
+        # n are noise.) Needs >=5 windows to possibly reach p<0.05.
+        "binomial_p_vs_coinflip": round(p, 4) if p is not None else None,
+        "significant_vs_coinflip": (p is not None and p < 0.05 and n >= 5),
     }
 
 
