@@ -120,7 +120,7 @@ export function EvalPanel() {
             <div key={r.label} style={{ display: 'flex', gap: 8, padding: '2px 0' }}>
               <span style={{ width: 24 }}>#{r.rank}</span>
               <span style={{ flex: 1 }}>{r.label}</span>
-              <span style={{ width: 70, textAlign: 'right', color: (r.excess_vs_buyhold ?? 0) >= 0 ? '#16a34a' : '#dc2626' }}>
+              <span style={{ width: 70, textAlign: 'right', color: (r.excess_vs_buyhold ?? 0) >= 0 ? 'var(--green)' : 'var(--red)' }}>
                 {typeof r.excess_vs_buyhold === 'number' ? `${(r.excess_vs_buyhold * 100).toFixed(1)}%` : '—'}
               </span>
               <span style={{ width: 44, textAlign: 'right' }}>{r.beats_buy_hold ? '✓BH' : '✗'}</span>
@@ -153,7 +153,7 @@ export function EvalPanel() {
         </div>
         {roll && !roll.error && (
           <div style={{ marginTop: 6, fontSize: 12 }}>
-            <div style={{ fontWeight: 600, color: (roll.excess_vs_buyhold?.mean ?? 0) > 0 ? '#16a34a' : 'var(--text-primary)' }}>{roll.verdict}</div>
+            <div style={{ fontWeight: 600, color: (roll.excess_vs_buyhold?.mean ?? 0) > 0 ? 'var(--green)' : 'var(--text-primary)' }}>{roll.verdict}</div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginTop: 4, color: 'var(--text-secondary)' }}>
               <span>windows: <strong>{roll.beats_buy_hold_windows ?? '—'}</strong></span>
               <span>binomial p: <strong>{typeof roll.binomial_p_vs_coinflip === 'number' ? roll.binomial_p_vs_coinflip.toFixed(2) : '—'}</strong></span>
@@ -162,9 +162,9 @@ export function EvalPanel() {
             </div>
           </div>
         )}
-        {roll?.error && <div style={{ marginTop: 6, color: 'var(--danger,#dc2626)', fontSize: 12 }}>{roll.error}</div>}
+        {roll?.error && <div style={{ marginTop: 6, color: 'var(--red)', fontSize: 12 }}>{roll.error}</div>}
       </div>
-      {err && <div style={{ color: 'var(--danger,#dc2626)', fontSize: 12 }}>{err}</div>}
+      {err && <div style={{ color: 'var(--red)', fontSize: 12 }}>{err}</div>}
       {loading && <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>scoring…</div>}
       {score && !loading && (
         score.note && (score.directional ?? 0) === 0 ? (
@@ -196,7 +196,7 @@ function Stat({ label, v, pos }: { label: string; v: string; pos?: boolean }) {
   return (
     <div>
       <div style={{ color: 'var(--text-secondary)', fontSize: 10, textTransform: 'uppercase' }}>{label}</div>
-      <div style={{ fontWeight: 700, color: pos === undefined ? 'var(--text-primary)' : pos ? '#16a34a' : '#dc2626' }}>{v}</div>
+      <div style={{ fontWeight: 700, color: pos === undefined ? 'var(--text-primary)' : pos ? 'var(--green)' : 'var(--red)' }}>{v}</div>
     </div>
   );
 }

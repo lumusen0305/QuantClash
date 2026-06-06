@@ -588,7 +588,7 @@ function EmbeddedScreener({ onViewChart }: { onViewChart: (ticker: string) => vo
 // ── Multi-factor screener (Value / Momentum / Quality / Low-Vol) ──
 function FactorBar({ label, value }: { label: string; value: number }) {
   const pct = Math.round(value * 100);
-  const color = value >= 0.66 ? '#16a34a' : value >= 0.33 ? '#d97706' : '#dc2626';
+  const color = value >= 0.66 ? 'var(--green)' : value >= 0.33 ? '#d97706' : 'var(--red)';
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11 }}>
       <span style={{ width: 64, color: 'var(--text-secondary)' }}>{label}</span>
@@ -628,7 +628,7 @@ function FactorScreener({ onViewChart }: { onViewChart: (ticker: string) => void
           {loading ? t('factors.scoring') : t('common.retry')}
         </button>
       </div>
-      {error && <div style={{ color: 'var(--danger, #dc2626)', fontSize: 12 }}>{error}</div>}
+      {error && <div style={{ color: 'var(--red)', fontSize: 12 }}>{error}</div>}
       {loading && rows.length === 0 && <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{t('factors.scoring')}</div>}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 10 }}>
         {rows.map((r) => (
@@ -679,15 +679,15 @@ function SectorRotationView() {
           </span>
         </div>
       )}
-      {error && <div style={{ color: 'var(--danger,#dc2626)', fontSize: 12 }}>{error}</div>}
+      {error && <div style={{ color: 'var(--red)', fontSize: 12 }}>{error}</div>}
       {loading && <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{t('factors.scoring')}</div>}
       {(data?.sectors ?? []).map((s) => (
         <div key={s.etf} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '5px 0', borderBottom: '1px solid var(--border)' }}>
           <span style={{ width: 24, color: 'var(--text-secondary)' }}>#{s.rank}</span>
           <span style={{ width: 56, fontWeight: 700 }}>{s.etf}</span>
           <span style={{ flex: 1, fontSize: 13 }}>{s.sector}{s.defensive ? ' 🛡' : ''}</span>
-          <span style={{ width: 70, textAlign: 'right', color: s.mom_1m >= 0 ? '#16a34a' : '#dc2626', fontSize: 12 }}>1m {s.mom_1m}%</span>
-          <span style={{ width: 70, textAlign: 'right', color: s.mom_3m >= 0 ? '#16a34a' : '#dc2626', fontSize: 12 }}>3m {s.mom_3m}%</span>
+          <span style={{ width: 70, textAlign: 'right', color: s.mom_1m >= 0 ? 'var(--green)' : 'var(--red)', fontSize: 12 }}>1m {s.mom_1m}%</span>
+          <span style={{ width: 70, textAlign: 'right', color: s.mom_3m >= 0 ? 'var(--green)' : 'var(--red)', fontSize: 12 }}>3m {s.mom_3m}%</span>
         </div>
       ))}
     </div>
