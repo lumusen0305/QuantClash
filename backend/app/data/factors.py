@@ -32,8 +32,15 @@ def _raw_factors(ticker: str) -> dict | None:
         close = hist["Close"]
         price = float(close.iloc[-1])
 
-        # Momentum: 6-month total return
-        mom = (price - float(close.iloc[0])) / float(close.iloc[0]) if len(close) > 1 else 0.0
+        # Momentum: 6-month return SKIPPING the most recent ~1 month (6-1
+        # momentum). The last month is dominated by short-term reversal, which
+        # contaminates raw momentum (Falck-Rej-Thesmar, arXiv 2009.04824).
+        if len(close) > 22:
+            mom = (float(close.iloc[-22]) - float(close.iloc[0])) / float(close.iloc[0])
+        elif len(close) > 1:
+            mom = (price - float(close.iloc[0])) / float(close.iloc[0])
+        else:
+            mom = 0.0
         # Volatility: stdev of daily returns (annualized-ish); lower is better
         rets = close.pct_change().dropna()
         vol = float(rets.std()) if len(rets) else 0.0
