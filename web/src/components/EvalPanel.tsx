@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { fetchEvalLabels, fetchEvalScore, fetchEvalCompare, fetchEvalLeaderboard, runRollingBacktest, type EvalScore, type LeaderRow, type RollingBacktest, type SelectionBias } from '../api/client';
 import { useI18n } from '../i18n/context';
+import styles from './EvalPanel.module.css';
 
 // Compact strategy-evaluation panel: pick a recorded config label and see how
 // its decisions performed on realized forward returns (net-of-cost, vs buy-hold,
@@ -76,20 +77,20 @@ export function EvalPanel() {
     <div style={{ border: '1px solid var(--border)', borderRadius: 10, padding: 14, marginTop: 12 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
         <strong style={{ fontSize: 14 }}>{t('eval.title')}
-          <button onClick={async () => { setShowBoard(v => !v); if (!board) { try { const lb = await fetchEvalLeaderboard(); setBoard(lb.ranked); setBoardBias(lb.selection_bias ?? null); } catch { /* */ } } }}
-            style={{ marginLeft: 10, padding: '3px 8px', borderRadius: 6, fontSize: 11, background: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: '1px solid var(--border)', cursor: 'pointer' }}>
+          <button className={styles.ctl} onClick={async () => { setShowBoard(v => !v); if (!board) { try { const lb = await fetchEvalLeaderboard(); setBoard(lb.ranked); setBoardBias(lb.selection_bias ?? null); } catch { /* */ } } }}
+            style={{ marginLeft: 10, padding: '3px 8px', fontSize: 11, cursor: 'pointer' }}>
             🏆 {showBoard ? t('eval.hide') : t('eval.leaderboard')}
           </button>
         </strong>
         <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-          <select value={sel} onChange={(e) => setSel(e.target.value)}
-            style={{ padding: '5px 8px', borderRadius: 6, background: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: '1px solid var(--border)' }}>
+          <select className={styles.ctl} value={sel} onChange={(e) => setSel(e.target.value)}
+            style={{ padding: '5px 8px' }}>
             {labels.length === 0 && <option value="">{t('eval.noData')}</option>}
             {labels.map((l) => <option key={l.label} value={l.label}>{l.label} ({l.count}){l.model ? ` · ${l.model}` : ''}</option>)}
           </select>
           <span style={{ color: 'var(--text-secondary)', fontSize: 12 }}>{t('eval.vs')}</span>
-          <select value={selB} onChange={(e) => setSelB(e.target.value)}
-            style={{ padding: '5px 8px', borderRadius: 6, background: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: '1px solid var(--border)' }}>
+          <select className={styles.ctl} value={selB} onChange={(e) => setSelB(e.target.value)}
+            style={{ padding: '5px 8px' }}>
             <option value="">{t('eval.single')}</option>
             {labels.map((l) => <option key={l.label} value={l.label}>{l.label}</option>)}
           </select>
@@ -142,14 +143,14 @@ export function EvalPanel() {
       <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid var(--border)' }}>
         <div style={{ display: 'flex', gap: 6, alignItems: 'center', fontSize: 12 }}>
           <span style={{ color: 'var(--text-secondary)' }}>{t('eval.robustness')}:</span>
-          <select value={rollStrat} onChange={(e) => setRollStrat(e.target.value)}
-            style={{ padding: '4px 6px', borderRadius: 6, background: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: '1px solid var(--border)' }}>
+          <select className={styles.ctl} value={rollStrat} onChange={(e) => setRollStrat(e.target.value)}
+            style={{ padding: '4px 6px' }}>
             <option value="tech_baseline">tech_baseline</option>
             <option value="mean_reversion">mean_reversion</option>
             <option value="momentum">momentum</option>
           </select>
-          <button onClick={runRoll} disabled={rollBusy}
-            style={{ padding: '4px 10px', borderRadius: 6, fontSize: 11, background: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: '1px solid var(--border)', cursor: rollBusy ? 'wait' : 'pointer' }}>
+          <button className={styles.ctl} onClick={runRoll} disabled={rollBusy}
+            style={{ padding: '4px 10px', fontSize: 11, cursor: rollBusy ? 'wait' : 'pointer' }}>
             {rollBusy ? t('eval.running') : t('eval.run')}
           </button>
         </div>
