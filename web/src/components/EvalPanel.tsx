@@ -117,7 +117,7 @@ export function EvalPanel() {
         </div>
       )}
       {showBoard && board && (
-        <div style={{ marginBottom: 8, fontSize: 12 }}>
+        <div style={{ marginBottom: 8, fontSize: 12, fontVariantNumeric: 'tabular-nums' }}>
           <div style={{ color: 'var(--text-secondary)', marginBottom: 4 }}>{t('eval.rankedByExcess')}</div>
           {board.map((r) => (
             <div key={r.label} style={{ display: 'flex', gap: 8, padding: '2px 0' }}>
@@ -157,7 +157,7 @@ export function EvalPanel() {
         {roll && !roll.error && (
           <div style={{ marginTop: 6, fontSize: 12 }}>
             <div style={{ fontWeight: 600, color: (roll.excess_vs_buyhold?.mean ?? 0) > 0 ? 'var(--green)' : 'var(--text-primary)' }}>{roll.verdict}</div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginTop: 4, color: 'var(--text-secondary)' }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginTop: 4, color: 'var(--text-secondary)', fontVariantNumeric: 'tabular-nums' }}>
               <span>{t('eval.windows')}: <strong>{roll.beats_buy_hold_windows ?? '—'}</strong></span>
               <span>{t('eval.binomialP')}: <strong>{typeof roll.binomial_p_vs_coinflip === 'number' ? roll.binomial_p_vs_coinflip.toFixed(2) : '—'}</strong></span>
               <span>{t('eval.flipRate')}: <strong>{typeof roll.action_stability?.mean_flip_rate === 'number' ? roll.action_stability.mean_flip_rate.toFixed(2) : '—'}</strong></span>
@@ -175,7 +175,7 @@ export function EvalPanel() {
             {score.holds}/{score.n} {t('eval.hold')} — {score.note}
           </div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(130px,1fr))', gap: 8, fontSize: 12 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(130px,1fr))', gap: 8, fontSize: 12, fontVariantNumeric: 'tabular-nums' }}>
             <Stat label={t('eval.hitRate')} v={pct(score.hit_rate)} />
             <Stat label={t('eval.netReturn')} v={pct(score.strategy_return)} pos={(score.strategy_return ?? 0) >= 0} />
             <Stat label={t('eval.buyHold')} v={pct(score.buy_hold_return)} />
