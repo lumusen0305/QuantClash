@@ -267,6 +267,15 @@ def test_verdict():
     check("handles None excess", V("0/2", False, False, None).startswith("NO edge"))
 
 
+def test_metric_direction():
+    from app.eval.harness import _metric_higher_is_better as H
+    check("returns higher better", H("excess_vs_buyhold") and H("strategy_return") and H("sortino"))
+    check("p-value lower better", H("return_p_approx") is False)
+    check("calibration lower better", H("calibration_gap") is False and H("brier_score") is False)
+    check("volatility lower better", H("strategy_return_std") is False)
+    check("unknown defaults higher", H("hit_rate") and H("some_new_metric"))
+
+
 def main():
     for fn in [test_selective_consensus, test_portfolio_builder, test_news_sentiment,
                test_score_decision_alpha, test_reflect_critique, test_style_levels,
@@ -274,7 +283,7 @@ def main():
                test_no_oversuppression, test_contamination_flag, test_binomial_sf,
                test_t_stat, test_two_sided_p_and_bonferroni, test_forward_return_horizon,
                test_faithfulness, test_faithfulness_non_mutating, test_brier_score,
-               test_tally_wins, test_verdict]:
+               test_tally_wins, test_verdict, test_metric_direction]:
         try:
             fn()
         except Exception as e:

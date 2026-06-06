@@ -466,6 +466,18 @@ def aggregate(labels: list) -> dict:
     return _aggregate_scores(scored, labels, overlapping=True)
 
 
+_LOWER_IS_BETTER = {"return_p_approx", "calibration_gap", "brier_score",
+                    "binomial_p_vs_coinflip", "strategy_return_std"}
+
+
+def _metric_higher_is_better(metric: str) -> bool:
+    """Direction of a ranking metric. Most are higher-is-better (returns, sortino,
+    hit-rate); p-values, calibration error and volatility are lower-is-better.
+    Pure — so leaderboard() ranks lower-is-better metrics correctly instead of
+    crowning the worst label."""
+    return metric not in _LOWER_IS_BETTER
+
+
 def leaderboard(metric: str = "excess_vs_buyhold") -> dict:
     """Score every recorded label and rank them by `metric` (default: excess
     return vs buy-and-hold) — a one-shot view of which strategy is winning.
@@ -491,7 +503,9 @@ def leaderboard(metric: str = "excess_vs_buyhold") -> dict:
             "return_p_approx": round(p, 4) if p is not None else None,
             "regime": (s.get("window") or {}).get("regime"),
         })
-    scored.sort(key=lambda x: (x.get(metric) is not None, x.get(metric)), reverse=True)
+    higher_better = _metric_higher_is_better(metric)
+    scored.sort(key=lambda x: (x.get(metric) is not None, x.get(metric)),
+                reverse=higher_better)
     for i, r in enumerate(scored, 1):
         r["rank"] = i
     # Multiple-testing / selection-bias guard (López de Prado, backtest overfitting):
@@ -511,5 +525,7 @@ def leaderboard(metric: str = "excess_vs_buyhold") -> dict:
                      f"Bonferroni-adjusted by x{trials}. A small raw p can still be "
                      f"insignificant after adjustment (selection bias)."),
         }
-    return {"metric": metric, "ranked": scored, "pending": pending,
+    return {"metric": metric,
+            "metric_direction": "higher_is_better" if higher_better else "lower_is_better",
+            "ranked": scored, "pending": pending,
             "selection_bias": selection_bias}
