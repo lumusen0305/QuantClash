@@ -16,6 +16,7 @@ export function EvalPanel() {
   const [err, setErr] = useState<string | null>(null);
   const [selB, setSelB] = useState<string>('');
   const [cmp, setCmp] = useState<Record<string, string | null> | null>(null);
+  const [cmpOverall, setCmpOverall] = useState<{ overall?: string; wins?: Record<string, number> } | null>(null);
   const [board, setBoard] = useState<LeaderRow[] | null>(null);
   const [showBoard, setShowBoard] = useState(false);
 
@@ -40,9 +41,11 @@ export function EvalPanel() {
   // A/B compare when a second label is chosen
   useEffect(() => {
     if (sel && selB && sel !== selB) {
-      fetchEvalCompare(sel, selB).then((c) => setCmp(c.better)).catch(() => setCmp(null));
+      fetchEvalCompare(sel, selB)
+        .then((c) => { setCmp(c.better); setCmpOverall({ overall: c.overall, wins: c.wins }); })
+        .catch(() => { setCmp(null); setCmpOverall(null); });
     } else {
-      setCmp(null);
+      setCmp(null); setCmpOverall(null);
     }
   }, [sel, selB]);
 
@@ -72,6 +75,16 @@ export function EvalPanel() {
       </div>
       {cmp && (
         <div style={{ marginBottom: 8, padding: 8, background: 'var(--bg-tertiary)', borderRadius: 6, fontSize: 12 }}>
+          {cmpOverall?.overall && (
+            <div style={{ marginBottom: 6, fontSize: 13 }}>
+              Overall winner: <strong>{cmpOverall.overall === 'tie' ? 'tie' : cmpOverall.overall}</strong>
+              {cmpOverall.wins && (
+                <span style={{ color: 'var(--text-secondary)', marginLeft: 6 }}>
+                  ({Object.entries(cmpOverall.wins).map(([k, v]) => `${k} ${v}`).join(' – ')})
+                </span>
+              )}
+            </div>
+          )}
           <strong>{sel} vs {selB} — winner per metric:</strong>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginTop: 4 }}>
             {Object.entries(cmp).map(([k, v]) => (
@@ -110,7 +123,9 @@ export function EvalPanel() {
             <Stat label="Excess vs B&H" v={pct(score.excess_vs_buyhold)} pos={(score.excess_vs_buyhold ?? 0) >= 0} />
             <Stat label="Beats B&H" v={beat == null ? '—' : beat ? '✓ yes' : '✗ no'} pos={!!beat} />
             <Stat label="Calib. gap" v={pct(score.calibration_gap)} />
+            <Stat label="Brier" v={typeof score.brier_score === 'number' ? score.brier_score.toFixed(3) : '—'} pos={typeof score.brier_score === 'number' ? score.brier_score < 0.25 : undefined} />
             <Stat label="Return/risk" v={typeof score.return_over_risk === 'number' ? score.return_over_risk.toFixed(2) : '—'} />
+            <Stat label="Sortino" v={typeof score.sortino === 'number' ? score.sortino.toFixed(2) : '—'} pos={typeof score.sortino === 'number' ? score.sortino >= 0 : undefined} />
             <Stat label="Regime" v={score.window?.regime ?? '—'} />
           </div>
         )

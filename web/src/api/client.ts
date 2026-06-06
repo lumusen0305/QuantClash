@@ -523,6 +523,8 @@ export interface EvalScore {
   strategy_return?: number | null;
   strategy_return_std?: number | null;
   return_over_risk?: number | null;
+  sortino?: number | null;
+  brier_score?: number | null;
   buy_hold_return?: number | null;
   excess_vs_buyhold?: number | null;
   beats_buy_hold?: boolean | null;
@@ -565,7 +567,8 @@ export const fetchEvalLeaderboard = (metric = 'excess_vs_buyhold') =>
     '/eval/leaderboard', { params: { metric } }).then((r) => r.data);
 
 export const fetchEvalCompare = (a: string, b: string) =>
-  api.get<{ a: EvalScore; b: EvalScore; better: Record<string, string | null> }>(
+  api.get<{ a: EvalScore; b: EvalScore; better: Record<string, string | null>;
+            wins?: Record<string, number>; overall?: string }>(
     '/eval/compare', { params: { a, b } }).then((r) => r.data);
 
 export const fetchActionQueue = (data: {
