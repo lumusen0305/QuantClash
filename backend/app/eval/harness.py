@@ -70,7 +70,10 @@ def _init_db():
         c.commit()
 
 
-def _closes(ticker: str, period: str = "1y") -> pd.Series | None:
+def _closes(ticker: str, period: str = "5y") -> pd.Series | None:
+    # 5y (not 1y) so decisions/forward-returns scored AS-OF dates more than a year
+    # ago still resolve a price — a 1y window silently scored old cohorts as
+    # unscoreable, breaking long-horizon FINSABER backtests.
     try:
         hist = yf.Ticker(ticker).history(period=period)
         if hist is None or hist.empty:

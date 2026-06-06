@@ -14,14 +14,22 @@ import yfinance as yf
 
 
 def _hist_asof(ticker: str, as_of_date: str) -> pd.DataFrame | None:
+    """History up to (and including) as_of_date. Fetches a date-windowed range
+    around as_of (≈14mo lookback for MA200 / 52-week-high) so it works for ANY
+    historical date — a fixed period="1y" from today silently returned nothing for
+    as_of dates >1 year ago, which broke long-horizon FINSABER backtests."""
+    import datetime as _dt
     try:
-        hist = yf.Ticker(ticker).history(period="1y")
+        d = _dt.date.fromisoformat(as_of_date)
+        start = (d - _dt.timedelta(days=430)).isoformat()
+        end = (d + _dt.timedelta(days=1)).isoformat()  # yfinance end is exclusive
+        hist = yf.Ticker(ticker).history(start=start, end=end)
         if hist is None or hist.empty:
             return None
         hist = hist.copy()
-        hist.index = [str(d.date()) for d in hist.index]
+        hist.index = [str(dt.date()) for dt in hist.index]
         # strict as-of cut: drop anything after the decision date (no look-ahead)
-        hist = hist[[d <= as_of_date for d in hist.index]]
+        hist = hist[[ix <= as_of_date for ix in hist.index]]
         return hist if len(hist) >= 30 else None
     except Exception:
         return None
