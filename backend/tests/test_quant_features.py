@@ -197,12 +197,49 @@ def test_forward_return_horizon():
     check("horizon at base -> ~0", abs(F("X", "2026-01-15", s, to_date="2026-01-10")) < 1e-9)
 
 
+def test_faithfulness():
+    from app.agents.managers.portfolio_manager import _reasoning_faithfulness as Fa
+    # stark clash: BUY but rationale is all bearish
+    clash = Fa("BUY", "Clear downtrend, breakdown below support, bearish momentum.")
+    check("stark BUY/bearish flagged", clash["consistent"] is False and clash["checked"])
+    # aligned: BUY with bullish rationale
+    ok = Fa("BUY", "Strong breakout, bullish uptrend, accumulate on dips.")
+    check("aligned BUY not flagged", ok["consistent"] is True)
+    # mild/mixed must NOT flag (avoid false positives -> no over-suppression)
+    mixed = Fa("BUY", "Some downside risk but bullish breakout and uptrend confirmed.")
+    check("mixed not flagged", mixed["consistent"] is True)
+    check("HOLD not checked", Fa("HOLD", "bearish bearish")["checked"] is False)
+
+
+def test_faithfulness_non_mutating():
+    # No-negative-optimization guard: the faithfulness flag must NEVER change a
+    # clean, consistent decision's action or confidence — flag only.
+    from app.agents.managers.portfolio_manager import _verify_decision
+    from app.agents.schemas import FinalDecision
+    lv = {"current_price": 100.0}
+    d = FinalDecision(action="BUY", confidence=0.8, reasoning="bullish breakout uptrend",
+                      entry_price=100, target_price=110, stop_loss=92, time_horizon="1M")
+    out = _verify_decision(d, lv)
+    check("consistent decision unchanged conf", out.confidence == 0.8)
+    check("consistent decision unchanged action", out.action == "BUY")
+    check("consistent decision keeps prices", out.target_price == 110 and out.stop_loss == 92)
+    # stark clash: flag appended to reasoning, but action+confidence untouched
+    d2 = FinalDecision(action="BUY", confidence=0.7,
+                       reasoning="downtrend breakdown bearish overbought 下跌 跌破",
+                       entry_price=100, target_price=110, stop_loss=92, time_horizon="1M")
+    out2 = _verify_decision(d2, lv)
+    check("clash flag appended", "faithfulness" in out2.reasoning)
+    check("clash does NOT penalize confidence", out2.confidence == 0.7)
+    check("clash does NOT change action", out2.action == "BUY")
+
+
 def main():
     for fn in [test_selective_consensus, test_portfolio_builder, test_news_sentiment,
                test_score_decision_alpha, test_reflect_critique, test_style_levels,
                test_verifier_gate, test_correlation_dampening, test_apply_cap, test_cvar,
                test_no_oversuppression, test_contamination_flag, test_binomial_sf,
-               test_t_stat, test_two_sided_p_and_bonferroni, test_forward_return_horizon]:
+               test_t_stat, test_two_sided_p_and_bonferroni, test_forward_return_horizon,
+               test_faithfulness, test_faithfulness_non_mutating]:
         try:
             fn()
         except Exception as e:

@@ -40,6 +40,30 @@ def _selective_consensus(signals: list) -> dict:
             "lean": lean, "dir_w": {k: round(v, 2) for k, v in dir_w.items()}}
 
 
+_BULL_TERMS = ("bullish", "uptrend", "upside", "breakout", "oversold", "rally",
+               "accumulate", "看多", "上漲", "突破", "多頭", "利多")
+_BEAR_TERMS = ("bearish", "downtrend", "downside", "breakdown", "overbought",
+               "selloff", "sell-off", "deteriorat", "看空", "下跌", "跌破", "空頭", "利空")
+
+
+def _reasoning_faithfulness(action: str, reasoning: str) -> dict:
+    """Does the stated reasoning's directional lean match the action? (TradeTrap
+    arXiv 2512.02261: LLM agents can output a decision their own rationale
+    contradicts.) Heuristic term-count; only flags STARK contradictions to avoid
+    false positives. Non-mutating — callers surface it, they don't act on it."""
+    a = (action or "").upper()
+    txt = (reasoning or "").lower()
+    if a not in ("BUY", "SELL") or not txt:
+        return {"checked": False, "consistent": True, "bull": 0, "bear": 0}
+    bull = sum(txt.count(t) for t in _BULL_TERMS)
+    bear = sum(txt.count(t) for t in _BEAR_TERMS)
+    if a == "BUY":
+        consistent = not (bear >= bull + 2 and bear >= 2)
+    else:  # SELL
+        consistent = not (bull >= bear + 2 and bull >= 2)
+    return {"checked": True, "consistent": consistent, "bull": bull, "bear": bear}
+
+
 def _verify_decision(decision, levels: dict | None):
     """Verifier-gated execution (arXiv 2603.27539 §3.2.4): validate the final
     decision's prices against the live price + action direction BEFORE it ships.
@@ -83,13 +107,27 @@ def _verify_decision(decision, levels: dict | None):
         if isinstance(s, (int, float)) and s <= p:
             fixes["stop_loss"] = None; notes.append("SELL stop was not above price → dropped")
 
-    if not fixes:
+    # Faithfulness: flag (do NOT block/penalize) a stark reasoning↔action clash.
+    faith = _reasoning_faithfulness(action, getattr(decision, "reasoning", ""))
+    extra_note = None
+    if not faith["consistent"]:
+        leans = "bearish" if action == "BUY" else "bullish"
+        extra_note = (f"[faithfulness: rationale leans {leans} "
+                      f"(bull={faith['bull']}, bear={faith['bear']}) but action is "
+                      f"{action} — review consistency]")
+
+    if not fixes and not extra_note:
         return decision
-    conf = getattr(decision, "confidence", None)
-    if isinstance(conf, (int, float)):
-        fixes["confidence"] = round(max(0.1, conf * 0.85), 2)  # penalize: it shipped bad numbers
+    if fixes:  # confidence is penalized ONLY for shipped bad numbers, never for the flag
+        conf = getattr(decision, "confidence", None)
+        if isinstance(conf, (int, float)):
+            fixes["confidence"] = round(max(0.1, conf * 0.85), 2)
     reasoning = getattr(decision, "reasoning", "") or ""
-    fixes["reasoning"] = reasoning + "\n[verifier corrected: " + "; ".join(notes) + "]"
+    if notes:
+        reasoning += "\n[verifier corrected: " + "; ".join(notes) + "]"
+    if extra_note:
+        reasoning += "\n" + extra_note
+    fixes["reasoning"] = reasoning
     try:
         return decision.model_copy(update=fixes)
     except Exception:
