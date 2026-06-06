@@ -202,6 +202,11 @@ def score(label: str, cost_bps: float | None = None) -> dict:
     hit_rate = (wins / directional) if directional else None
     avg_conf = (conf_sum / conf_n) if conf_n else None
     strat_net = (sum(net_returns) / len(net_returns)) if net_returns else None
+    # Profit factor = gross wins / gross losses (>1 = profitable); measures
+    # win/loss MAGNITUDE, distinct from hit-rate (frequency).
+    gross_win = sum(r for r in net_returns if r > 0)
+    gross_loss = abs(sum(r for r in net_returns if r < 0))
+    profit_factor = round(gross_win / gross_loss, 2) if gross_loss > 0 else None  # None = no losses (JSON-safe)
     # Dispersion across positions — a single-window mean can be a fluke driven by
     # one name; std + return/risk make robustness visible (Reliable-Eval §4.6 #3).
     strat_std = None
@@ -239,6 +244,7 @@ def score(label: str, cost_bps: float | None = None) -> dict:
         "strategy_return_std": round(strat_std, 4) if strat_std is not None else None,
         "return_over_risk": round(return_over_risk, 3) if return_over_risk is not None else None,
         "sortino": round(sortino, 3) if sortino is not None else None,
+        "profit_factor": profit_factor,
         "strategy_return_gross": round(sum(gross_returns) / len(gross_returns), 4) if gross_returns else None,
         "buy_hold_return": round(buy_hold, 4) if buy_hold is not None else None,
         "excess_vs_buyhold": round(excess, 4) if excess is not None else None,
