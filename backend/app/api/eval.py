@@ -125,6 +125,13 @@ async def eval_aggregate(labels: str):
     return await loop.run_in_executor(None, lambda: harness.aggregate(labs))
 
 
+@router.get("/leaderboard")
+async def eval_leaderboard(metric: str = "excess_vs_buyhold"):
+    """Score + rank ALL recorded labels by `metric` (one-shot 'who's winning')."""
+    loop = asyncio.get_event_loop()
+    return await loop.run_in_executor(None, lambda: harness.leaderboard(metric))
+
+
 @router.get("/labels")
 async def eval_labels():
     harness._init_db()

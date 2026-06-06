@@ -304,3 +304,31 @@ def aggregate(labels: list) -> dict:
         "beats_buy_hold_windows": f"{beats}/{len(usable)}",
         "robust": beats == len(usable) and len(usable) >= 2,  # beat BH in EVERY window
     }
+
+
+def leaderboard(metric: str = "excess_vs_buyhold") -> dict:
+    """Score every recorded label and rank them by `metric` (default: excess
+    return vs buy-and-hold) — a one-shot view of which strategy is winning.
+    Labels with no directional decisions yet are listed separately."""
+    import sqlite3
+    _init_db()
+    with sqlite3.connect(_DB) as c:
+        labels = [r[0] for r in c.execute("SELECT DISTINCT label FROM eval_decisions").fetchall()]
+    scored, pending = [], []
+    for lab in labels:
+        s = score(lab)
+        if s.get(metric) is None:
+            pending.append({"label": lab, "n": s.get("n"), "holds": s.get("holds"),
+                            "note": s.get("note")})
+            continue
+        scored.append({
+            "label": lab, "directional": s.get("directional"),
+            "hit_rate": s.get("hit_rate"), "strategy_return": s.get("strategy_return"),
+            "excess_vs_buyhold": s.get("excess_vs_buyhold"),
+            "beats_buy_hold": s.get("beats_buy_hold"), "sortino": s.get("sortino"),
+            "regime": (s.get("window") or {}).get("regime"),
+        })
+    scored.sort(key=lambda x: (x.get(metric) is not None, x.get(metric)), reverse=True)
+    for i, r in enumerate(scored, 1):
+        r["rank"] = i
+    return {"metric": metric, "ranked": scored, "pending": pending}
