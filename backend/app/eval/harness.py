@@ -197,6 +197,7 @@ def score(label: str, cost_bps: float | None = None, to_date: str | None = None)
     gross_returns: list[float] = []
     net_returns: list[float] = []
     fwd_buys: list[float] = []
+    brier_pairs: list[tuple] = []  # (confidence, outcome01) for the Brier score
     bh_by_ticker: dict[str, float] = {}  # buy-and-hold: one fwd return per ticker
     scored_rows = []
     earliest = min((as_of for _, as_of, *_ in rows), default=None)
@@ -225,6 +226,7 @@ def score(label: str, cost_bps: float | None = None, to_date: str | None = None)
             if isinstance(conf, (int, float)):
                 conf_sum += conf
                 conf_n += 1
+                brier_pairs.append((conf, 1.0 if favour > 0 else 0.0))
             item["correct"] = favour > 0
             item["net_return"] = round(net, 4)
         elif action == "HOLD":
@@ -233,6 +235,7 @@ def score(label: str, cost_bps: float | None = None, to_date: str | None = None)
 
     hit_rate = (wins / directional) if directional else None
     avg_conf = (conf_sum / conf_n) if conf_n else None
+    brier = _brier_score(brier_pairs)  # proper calibration score (lower better; 0.25 = no-skill)
     strat_net = (sum(net_returns) / len(net_returns)) if net_returns else None
     # Profit factor = gross wins / gross losses (>1 = profitable); measures
     # win/loss MAGNITUDE, distinct from hit-rate (frequency).
@@ -273,6 +276,8 @@ def score(label: str, cost_bps: float | None = None, to_date: str | None = None)
         "avg_confidence": round(avg_conf, 3) if avg_conf is not None else None,
         "calibration_gap": round(abs(avg_conf - hit_rate), 3)
                             if (avg_conf is not None and hit_rate is not None) else None,
+        "brier_score": round(brier, 4) if brier is not None else None,
+        "brier_vs_noskill": (round(brier - 0.25, 4) if brier is not None else None),  # <0 = better than always-0.5
         "avg_fwd_return_buys": round(sum(fwd_buys) / len(fwd_buys), 4) if fwd_buys else None,
         "strategy_return": round(strat_net, 4) if strat_net is not None else None,
         "strategy_return_std": round(strat_std, 4) if strat_std is not None else None,
@@ -315,6 +320,18 @@ def compare(label_a: str, label_b: str) -> dict:
             "calibration_gap": _better("calibration_gap", higher=False),  # lower is better
         },
     }
+
+
+def _brier_score(pairs: list) -> float | None:
+    """Brier score = mean((confidence - outcome)^2) over (confidence, outcome01)
+    pairs — a PROPER scoring rule for probabilistic forecasts (lower is better;
+    0 = perfect, 0.25 = the no-skill 'always 0.5' baseline). Sharper than the
+    single |avg_conf - hit_rate| gap because it scores each call's confidence
+    against its own outcome (rewards confident-correct, punishes confident-wrong).
+    Calibration matters for sizing — TrustTrade/Reliable-Eval. None if no pairs."""
+    if not pairs:
+        return None
+    return sum((c - o) ** 2 for c, o in pairs) / len(pairs)
 
 
 def _t_stat(returns: list) -> float | None:

@@ -233,13 +233,25 @@ def test_faithfulness_non_mutating():
     check("clash does NOT change action", out2.action == "BUY")
 
 
+def test_brier_score():
+    from app.eval.harness import _brier_score as B
+    check("empty -> None", B([]) is None)
+    check("perfect -> 0", B([(1.0, 1.0), (0.0, 0.0)]) == 0.0)
+    check("worst -> 1", B([(1.0, 0.0), (0.0, 1.0)]) == 1.0)
+    check("no-skill 0.5 -> 0.25", abs(B([(0.5, 1.0), (0.5, 0.0)]) - 0.25) < 1e-9)
+    # confident-correct beats confident-wrong
+    good = B([(0.9, 1.0), (0.8, 1.0)])
+    bad = B([(0.9, 0.0), (0.8, 0.0)])
+    check("confident-correct lower brier", good < bad)
+
+
 def main():
     for fn in [test_selective_consensus, test_portfolio_builder, test_news_sentiment,
                test_score_decision_alpha, test_reflect_critique, test_style_levels,
                test_verifier_gate, test_correlation_dampening, test_apply_cap, test_cvar,
                test_no_oversuppression, test_contamination_flag, test_binomial_sf,
                test_t_stat, test_two_sided_p_and_bonferroni, test_forward_return_horizon,
-               test_faithfulness, test_faithfulness_non_mutating]:
+               test_faithfulness, test_faithfulness_non_mutating, test_brier_score]:
         try:
             fn()
         except Exception as e:
