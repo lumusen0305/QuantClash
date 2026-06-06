@@ -236,6 +236,7 @@ def score(label: str, cost_bps: float | None = None, to_date: str | None = None)
     hit_rate = (wins / directional) if directional else None
     avg_conf = (conf_sum / conf_n) if conf_n else None
     brier = _brier_score(brier_pairs)  # proper calibration score (lower better; 0.25 = no-skill)
+    discrim = _confidence_discrimination(brier_pairs)  # resolution: does conf separate win/loss?
     strat_net = (sum(net_returns) / len(net_returns)) if net_returns else None
     # Profit factor = gross wins / gross losses (>1 = profitable); measures
     # win/loss MAGNITUDE, distinct from hit-rate (frequency).
@@ -278,6 +279,7 @@ def score(label: str, cost_bps: float | None = None, to_date: str | None = None)
                             if (avg_conf is not None and hit_rate is not None) else None,
         "brier_score": round(brier, 4) if brier is not None else None,
         "brier_vs_noskill": (round(brier - 0.25, 4) if brier is not None else None),  # <0 = better than always-0.5
+        "confidence_discrimination": discrim,  # resolution: high-conf hit-rate − low-conf hit-rate (>0 = informative)
         "avg_fwd_return_buys": round(sum(fwd_buys) / len(fwd_buys), 4) if fwd_buys else None,
         "strategy_return": round(strat_net, 4) if strat_net is not None else None,
         "strategy_return_std": round(strat_std, 4) if strat_std is not None else None,
@@ -384,6 +386,31 @@ def action_stability_across(labels: list) -> dict:
     return {"mean_flip_rate": round(sum(rates) / len(rates), 3), "tickers": len(rates),
             "note": ("mean fraction of adjacent same-ticker decisions that reversed "
                      "BUY<->SELL (AlphaForgeBench instability; lower = more stable)")}
+
+
+def _confidence_discrimination(pairs: list) -> dict:
+    """Does higher confidence actually mean higher accuracy? Splits (confidence,
+    outcome01) pairs at the MEDIAN confidence and compares hit-rate in the
+    high-confidence half vs the low-confidence half. `discrimination` = high − low:
+    >0 means confidence is informative (separates winners from losers), ~0 or <0
+    means it's noise and the agent should abstain (HOLD) more. This is the
+    resolution half of forecast quality, complementary to Brier's calibration
+    half (I-CALM selective-answering, arXiv 2604.03904). None if <4 pairs or all
+    confidences equal (no split possible)."""
+    if len(pairs) < 4:
+        return {"discrimination": None, "n": len(pairs)}
+    import statistics as _st
+    confs = [c for c, _ in pairs]
+    med = _st.median(confs)
+    high = [o for c, o in pairs if c >= med]
+    low = [o for c, o in pairs if c < med]
+    if not high or not low:  # all equal / degenerate split
+        return {"discrimination": None, "n": len(pairs), "note": "confidences too uniform to split"}
+    hi_hit = sum(high) / len(high)
+    lo_hit = sum(low) / len(low)
+    return {"discrimination": round(hi_hit - lo_hit, 3),
+            "high_conf_hit_rate": round(hi_hit, 3), "low_conf_hit_rate": round(lo_hit, 3),
+            "split_at": round(med, 3), "n_high": len(high), "n_low": len(low)}
 
 
 def _brier_score(pairs: list) -> float | None:

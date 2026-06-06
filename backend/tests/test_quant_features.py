@@ -286,6 +286,21 @@ def test_action_stability():
     check("counts directional only", S(["HOLD", "BUY", "SELL"])["n_directional"] == 2)
 
 
+def test_confidence_discrimination():
+    from app.eval.harness import _confidence_discrimination as D
+    check("too few -> None", D([(0.9, 1.0), (0.5, 0.0)])["discrimination"] is None)
+    # high-conf calls win, low-conf calls lose -> strong positive discrimination
+    informative = D([(0.9, 1.0), (0.8, 1.0), (0.4, 0.0), (0.3, 0.0)])
+    check("informative conf -> positive", informative["discrimination"] > 0.5)
+    # confidence unrelated to outcome -> ~0 discrimination
+    noise = D([(0.9, 1.0), (0.8, 0.0), (0.4, 1.0), (0.3, 0.0)])
+    check("noise conf -> ~0", abs(noise["discrimination"]) < 0.6)
+    # inverted: confident calls lose -> negative discrimination
+    inverted = D([(0.9, 0.0), (0.8, 0.0), (0.4, 1.0), (0.3, 1.0)])
+    check("inverted conf -> negative", inverted["discrimination"] < 0)
+    check("all-equal conf -> None", D([(0.5, 1.0), (0.5, 0.0), (0.5, 1.0), (0.5, 0.0)])["discrimination"] is None)
+
+
 def main():
     for fn in [test_selective_consensus, test_portfolio_builder, test_news_sentiment,
                test_score_decision_alpha, test_reflect_critique, test_style_levels,
@@ -293,7 +308,8 @@ def main():
                test_no_oversuppression, test_contamination_flag, test_binomial_sf,
                test_t_stat, test_two_sided_p_and_bonferroni, test_forward_return_horizon,
                test_faithfulness, test_faithfulness_non_mutating, test_brier_score,
-               test_tally_wins, test_verdict, test_metric_direction, test_action_stability]:
+               test_tally_wins, test_verdict, test_metric_direction, test_action_stability,
+               test_confidence_discrimination]:
         try:
             fn()
         except Exception as e:
