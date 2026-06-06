@@ -401,7 +401,7 @@
   font-size: 12px;
   font-weight: 600;
   color: #fff;
-  background: var(--accent, #00a870);
+  background: var(--accent);
   border: none;
   border-radius: var(--radius);
   cursor: pointer;

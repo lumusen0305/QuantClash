@@ -632,7 +632,7 @@ export function WorkspacePage({ onNavigate }: WorkspacePageProps = {}) {
               <div key={p.ticker} style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '6px 0' }}>
                 <span style={{ width: 64, fontWeight: 700 }}>{p.ticker}</span>
                 <span style={{ flex: 1, height: 14, background: 'var(--bg-tertiary)', borderRadius: 4, overflow: 'hidden' }}>
-                  <span style={{ display: 'block', width: `${p.weight_pct}%`, height: '100%', background: 'var(--accent, #00a870)' }} />
+                  <span style={{ display: 'block', width: `${p.weight_pct}%`, height: '100%', background: 'var(--accent)' }} />
                 </span>
                 <span style={{ width: 52, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{p.weight_pct}%</span>
                 <span style={{ width: 48, textAlign: 'right', color: 'var(--text-secondary)', fontSize: 12 }}>{Math.round(p.confidence * 100)}%</span>

@@ -129,7 +129,7 @@ export function EvalPanel() {
             </div>
           ))}
           {boardBias && typeof boardBias.trials === 'number' && boardBias.trials > 1 && (
-            <div style={{ marginTop: 6, padding: 6, borderRadius: 6, background: 'var(--bg-secondary,var(--bg-tertiary))', color: 'var(--text-secondary)', fontSize: 11 }}>
+            <div style={{ marginTop: 6, padding: 6, borderRadius: 'var(--radius)', background: 'var(--bg-secondary)', color: 'var(--text-secondary)', fontSize: 11 }}>
               ⚠ {t('eval.selBiasPrefix')} {boardBias.trials} {t('eval.selBiasTrials')}
               {typeof boardBias.winner_p_bonferroni === 'number' && (
                 <> {t('eval.selBiasPval')} <strong>{boardBias.winner_p_bonferroni.toFixed(3)}</strong>
