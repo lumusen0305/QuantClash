@@ -185,12 +185,24 @@ def test_two_sided_p_and_bonferroni():
     check("bonferroni x20 kills it", min(1.0, raw * 20) > 0.05)
 
 
+def test_forward_return_horizon():
+    # Fixed-horizon measurement -> non-overlapping rolling windows.
+    import pandas as pd
+    from app.eval.harness import forward_return as F
+    s = pd.Series([100.0, 110.0, 120.0, 130.0],
+                  index=["2026-01-01", "2026-02-01", "2026-03-01", "2026-04-01"])
+    check("to-latest return (+30%)", abs(F("X", "2026-01-15", s) - 0.30) < 1e-9)
+    check("fixed horizon (+10%)", abs(F("X", "2026-01-15", s, to_date="2026-02-01") - 0.10) < 1e-9)
+    check("horizon uses close on/before", abs(F("X", "2026-01-15", s, to_date="2026-03-20") - 0.20) < 1e-9)
+    check("horizon at base -> ~0", abs(F("X", "2026-01-15", s, to_date="2026-01-10")) < 1e-9)
+
+
 def main():
     for fn in [test_selective_consensus, test_portfolio_builder, test_news_sentiment,
                test_score_decision_alpha, test_reflect_critique, test_style_levels,
                test_verifier_gate, test_correlation_dampening, test_apply_cap, test_cvar,
                test_no_oversuppression, test_contamination_flag, test_binomial_sf,
-               test_t_stat, test_two_sided_p_and_bonferroni]:
+               test_t_stat, test_two_sided_p_and_bonferroni, test_forward_return_horizon]:
         try:
             fn()
         except Exception as e:

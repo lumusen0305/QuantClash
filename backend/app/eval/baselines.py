@@ -107,30 +107,44 @@ _STRATEGIES = {"tech_baseline": tech_baseline, "mean_reversion": mean_reversion_
 
 
 def rolling_backtest(tickers: list, start_date: str, end_date: str,
-                     strategy: str = "tech_baseline", step_days: int = 30) -> dict:
+                     strategy: str = "tech_baseline", step_days: int = 30,
+                     non_overlapping: bool = True) -> dict:
     """FINSABER-style rolling backtest (arXiv 2505.07078): run a deterministic
     strategy as-of many step-dates across a long horizon, score each window, and
     aggregate — fighting data-snooping / single-window flukes. Auto-generates the
     cohorts instead of seeding each by hand. Deterministic strategies only
-    (leakage-free as-of); the LLM agent has news look-ahead so it's excluded."""
+    (leakage-free as-of); the LLM agent has news look-ahead so it's excluded.
+
+    With `non_overlapping` (default), each window is measured over a FIXED horizon
+    of `step_days` (from its as-of to the next step date) so consecutive windows
+    don't share future periods — making them statistically independent and the
+    aggregate binomial significance test valid (purged-CV / non-overlapping
+    windows). Set False for the legacy measure-to-latest-close behavior."""
     import datetime as _dt
-    from app.eval.harness import aggregate
+    from app.eval.harness import aggregate, score, _aggregate_scores
     try:
         sd = _dt.date.fromisoformat(start_date)
         ed = _dt.date.fromisoformat(end_date)
     except Exception:
         return {"error": "bad dates (YYYY-MM-DD)"}
-    labels = []
+    labels, horizons = [], {}
+    step = max(1, step_days)
     d = sd
     while d <= ed:
         lab = f"roll_{strategy}_{d.isoformat()}"
         run_baseline_eval(tickers, d.isoformat(), lab, strategy)
         labels.append(lab)
-        d = d + _dt.timedelta(days=max(1, step_days))
-    agg = aggregate(labels)
+        horizons[lab] = (d + _dt.timedelta(days=step)).isoformat()
+        d = d + _dt.timedelta(days=step)
+    if non_overlapping:
+        scored = [score(lab, to_date=horizons[lab]) for lab in labels]
+        agg = _aggregate_scores(scored, labels, overlapping=False)
+    else:
+        agg = aggregate(labels)
     agg["strategy"] = strategy
     agg["windows_generated"] = len(labels)
     agg["step_days"] = step_days
+    agg["non_overlapping"] = non_overlapping
     return agg
 
 

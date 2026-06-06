@@ -82,15 +82,26 @@ def price_asof(ticker: str, date_str: str, closes: pd.Series | None = None) -> f
     return None
 
 
-def forward_return(ticker: str, as_of_date: str, closes: pd.Series | None = None) -> float | None:
-    """Realized return from the as-of price to the latest available close."""
+def forward_return(ticker: str, as_of_date: str, closes: pd.Series | None = None,
+                   to_date: str | None = None) -> float | None:
+    """Realized return from the as-of price to the close on/before `to_date`
+    (default: latest available close). A fixed `to_date` lets rolling windows
+    measure NON-OVERLAPPING horizons so they're statistically independent —
+    measuring every window to 'today' makes them overlap and inflates aggregate
+    significance (the purged-CV / non-overlapping-windows concern)."""
     s = closes if closes is not None else _closes(ticker)
     if s is None or len(s) == 0:
         return None
     base = price_asof(ticker, as_of_date, s)
     if not base:
         return None
-    latest = float(s.iloc[-1])
+    if to_date is not None:
+        prior = [v for d, v in s.items() if d <= to_date]
+        if not prior:
+            return None
+        latest = float(prior[-1])
+    else:
+        latest = float(s.iloc[-1])
     return (latest - base) / base
 
 
@@ -160,7 +171,7 @@ def _regime(from_date: str, benchmark: str = "SPY") -> dict:
             "predates_llm_cutoff": leak}
 
 
-def score(label: str, cost_bps: float | None = None) -> dict:
+def score(label: str, cost_bps: float | None = None, to_date: str | None = None) -> dict:
     """Aggregate metrics for all decisions under `label`, scored vs realized
     forward returns to the latest close.
 
@@ -192,7 +203,7 @@ def score(label: str, cost_bps: float | None = None) -> dict:
     cost_legs = []  # track per-leg bps actually applied (for reporting)
     for ticker, as_of, action, conf, ref in rows:
         s = cache.setdefault(ticker, _closes(ticker))
-        fr = forward_return(ticker, as_of, s)
+        fr = forward_return(ticker, as_of, s, to_date)
         if fr is None:
             continue
         bh_by_ticker.setdefault(ticker, fr)  # earliest decision's hold return
@@ -343,13 +354,12 @@ def _binomial_sf(k: int, n: int, p: float = 0.5) -> float | None:
     return sum(math.comb(n, i) * p ** i * (1 - p) ** (n - i) for i in range(k, n + 1))
 
 
-def aggregate(labels: list) -> dict:
-    """Rolling-window robustness (Reliable-Eval arXiv 2603.27539 §4.6 #3):
-    aggregate the same strategy scored across multiple non-overlapping window
-    labels into mean ± std of the key metrics, plus how many windows beat
-    buy-and-hold. A strategy that only wins in one window is not robust."""
+def _aggregate_scores(scored: list, labels: list, overlapping: bool = True) -> dict:
+    """Aggregate already-computed per-window score dicts into a robustness summary.
+    `overlapping` marks whether the windows share future measurement periods (the
+    default to-latest-close scoring does) — if so the binomial test's independence
+    assumption is violated and its p-value is optimistic, so it's flagged."""
     import statistics as _st
-    scored = [score(l) for l in labels]
     usable = [s for s in scored if s.get("directional")]
     if not usable:
         return {"labels": labels, "windows": len(scored), "note": "no directional decisions in any window"}
@@ -365,7 +375,7 @@ def aggregate(labels: list) -> dict:
     beats = sum(1 for s in usable if s.get("beats_buy_hold") is True)
     n = len(usable)
     p = _binomial_sf(beats, n)  # P(>= beats wins | coin-flip null)
-    return {
+    out = {
         "labels": labels,
         "windows": n,
         "hit_rate": _ms("hit_rate"),
@@ -379,7 +389,25 @@ def aggregate(labels: list) -> dict:
         # n are noise.) Needs >=5 windows to possibly reach p<0.05.
         "binomial_p_vs_coinflip": round(p, 4) if p is not None else None,
         "significant_vs_coinflip": (p is not None and p < 0.05 and n >= 5),
+        "windows_overlapping": overlapping,
     }
+    if overlapping:
+        out["overlap_warning"] = (
+            "windows measured to latest close overlap (autocorrelated) — the binomial "
+            "p-value assumes independence and is OPTIMISTIC. Use rolling_backtest's "
+            "fixed-horizon (non-overlapping) mode for a valid significance test."
+        )
+    return out
+
+
+def aggregate(labels: list) -> dict:
+    """Rolling-window robustness (Reliable-Eval arXiv 2603.27539 §4.6 #3):
+    aggregate the same strategy scored across multiple window labels into mean ±
+    std of the key metrics, plus how many windows beat buy-and-hold. A strategy
+    that only wins in one window is not robust. NOTE: scores to latest close, so
+    windows overlap — see overlap_warning."""
+    scored = [score(l) for l in labels]
+    return _aggregate_scores(scored, labels, overlapping=True)
 
 
 def leaderboard(metric: str = "excess_vs_buyhold") -> dict:

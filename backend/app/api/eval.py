@@ -43,6 +43,7 @@ class RollingBacktestRequest(BaseModel):
     end_date: str
     strategy: str = "tech_baseline"      # tech_baseline | mean_reversion | momentum
     step_days: int = 30
+    non_overlapping: bool = True         # fixed-horizon windows -> valid significance
 
 
 @router.post("/rolling-backtest")
@@ -55,7 +56,7 @@ async def eval_rolling_backtest(req: RollingBacktestRequest):
     loop = asyncio.get_event_loop()
     return await loop.run_in_executor(
         None, lambda: rolling_backtest(universe, req.start_date, req.end_date,
-                                       req.strategy, req.step_days)
+                                       req.strategy, req.step_days, req.non_overlapping)
     )
 
 
