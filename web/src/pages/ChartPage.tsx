@@ -912,7 +912,7 @@ export function ChartPage({ initialTicker, onTickerConsumed, onAnalyze }: ChartP
                           <button
                             className={styles.folderActionBtn}
                             onClick={(e) => { e.stopPropagation(); commitRename(folder.id); }}
-                            title="Confirm rename"
+                            title={t('tip.confirmRename')}
                           >
                             <Check size={10} />
                           </button>

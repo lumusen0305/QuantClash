@@ -495,7 +495,7 @@ function EmbeddedScreener({ onViewChart }: { onViewChart: (ticker: string) => vo
               <button
                 className={`${styles.boolChip} ${styles.boolChipOn}`}
                 onClick={() => setFilters((p) => ({ ...p, desc: !p.desc }))}
-                title="Toggle direction">
+                title={t('tip.toggleDir')}>
                 {filters.desc ? '↓' : '↑'}
               </button>
             </div>
@@ -821,7 +821,7 @@ export function DiscoveryPage({ onSelectTicker }: DiscoveryPageProps) {
               {refreshing && <span className={styles.refreshingLabel}>{t('discover.refreshing')}</span>}
               <span className={styles.lastRefresh}>{timeStr}</span>
               <button className={`${styles.refreshBtn} ${refreshing ? styles.spin : ''}`}
-                onClick={() => loadMovers(true)} title="Refresh" aria-label="Refresh market data">
+                onClick={() => loadMovers(true)} title={t('common.refresh')} aria-label={t('tip.refreshMarket')}>
                 <RefreshCw size={12} />
               </button>
             </>

@@ -66,14 +66,14 @@ export function Header({ strategyName, onSave, onLoad, onNew, onRun, saving, run
             className={`${styles.btn} ${styles.btnRun}`}
             onClick={handleRun}
             disabled={running || !ticker.trim()}
-            title="Run Analysis"
+            title={t('tip.runAnalysis')}
           >
             <Play size={14} />
             <span>{running ? t('dag.running') : t('dag.run')}</span>
           </button>
         </div>
         <span className={styles.divider} />
-        <button className={styles.btn} onClick={onNew} title="New Strategy">
+        <button className={styles.btn} onClick={onNew} title={t('tip.newStrategy')}>
           <Plus size={16} />
           <span>{t('dag.new')}</span>
         </button>
