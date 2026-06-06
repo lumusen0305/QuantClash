@@ -514,6 +514,8 @@ export const buildPortfolio = (
 export interface EvalScore {
   label: string;
   n: number;
+  scored?: number;
+  unscored?: number;
   directional?: number;
   holds?: number;
   hold_rate?: number | null;
@@ -553,7 +555,7 @@ export const fetchPairs = (tickers?: string[]) =>
     .then((r) => r.data);
 
 export const fetchEvalLabels = () =>
-  api.get<{ labels: { label: string; count: number }[] }>('/eval/labels').then((r) => r.data.labels);
+  api.get<{ labels: { label: string; count: number; model?: string | null }[] }>('/eval/labels').then((r) => r.data.labels);
 
 export const fetchEvalScore = (label: string) =>
   api.get<EvalScore>('/eval/score', { params: { label } }).then((r) => r.data);

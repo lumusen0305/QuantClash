@@ -9,7 +9,7 @@ function pct(v: number | null | undefined): string {
 }
 
 export function EvalPanel() {
-  const [labels, setLabels] = useState<{ label: string; count: number }[]>([]);
+  const [labels, setLabels] = useState<{ label: string; count: number; model?: string | null }[]>([]);
   const [sel, setSel] = useState<string>('');
   const [score, setScore] = useState<EvalScore | null>(null);
   const [loading, setLoading] = useState(false);
@@ -82,7 +82,7 @@ export function EvalPanel() {
           <select value={sel} onChange={(e) => setSel(e.target.value)}
             style={{ padding: '5px 8px', borderRadius: 6, background: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: '1px solid var(--border)' }}>
             {labels.length === 0 && <option value="">no eval data yet</option>}
-            {labels.map((l) => <option key={l.label} value={l.label}>{l.label} ({l.count})</option>)}
+            {labels.map((l) => <option key={l.label} value={l.label}>{l.label} ({l.count}){l.model ? ` · ${l.model}` : ''}</option>)}
           </select>
           <span style={{ color: 'var(--text-secondary)', fontSize: 12 }}>vs</span>
           <select value={selB} onChange={(e) => setSelB(e.target.value)}
@@ -174,6 +174,7 @@ export function EvalPanel() {
             <Stat label="Return/risk" v={typeof score.return_over_risk === 'number' ? score.return_over_risk.toFixed(2) : '—'} />
             <Stat label="Sortino" v={typeof score.sortino === 'number' ? score.sortino.toFixed(2) : '—'} pos={typeof score.sortino === 'number' ? score.sortino >= 0 : undefined} />
             <Stat label="Regime" v={score.window?.regime ?? '—'} />
+            {(score.unscored ?? 0) > 0 && <Stat label="Unscored" v={String(score.unscored)} pos={false} />}
           </div>
         )
       )}
