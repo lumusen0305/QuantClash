@@ -247,6 +247,8 @@ def score(label: str, cost_bps: float | None = None) -> dict:
     # StockBench (arXiv 2510.02209): most LLM agents fail to beat it.
     buy_hold = (sum(bh_by_ticker.values()) / len(bh_by_ticker)) if bh_by_ticker else None
     excess = (strat_net - buy_hold) if (strat_net is not None and buy_hold is not None) else None
+    # Is the mean decision return distinguishable from zero, or just noise?
+    t_stat = _t_stat(net_returns)
     return {
         "label": label,
         "n": len(rows),
@@ -265,6 +267,9 @@ def score(label: str, cost_bps: float | None = None) -> dict:
         "strategy_return_std": round(strat_std, 4) if strat_std is not None else None,
         "return_over_risk": round(return_over_risk, 3) if return_over_risk is not None else None,
         "sortino": round(sortino, 3) if sortino is not None else None,
+        "return_t_stat": round(t_stat, 2) if t_stat is not None else None,
+        # approx: |t|>2 with >=10 directional decisions ~ mean return != 0 at ~5%
+        "return_significant": (t_stat is not None and abs(t_stat) > 2.0 and directional >= 10),
         "profit_factor": profit_factor,
         "strategy_return_gross": round(sum(gross_returns) / len(gross_returns), 4) if gross_returns else None,
         "buy_hold_return": round(buy_hold, 4) if buy_hold is not None else None,
@@ -299,6 +304,22 @@ def compare(label_a: str, label_b: str) -> dict:
             "calibration_gap": _better("calibration_gap", higher=False),  # lower is better
         },
     }
+
+
+def _t_stat(returns: list) -> float | None:
+    """One-sample t-statistic of per-decision returns vs a zero-return null:
+    mean / (sample_std / sqrt(n)). |t| >~ 2 (with enough decisions) suggests the
+    mean return is distinguishable from zero rather than noise — guards against
+    reading a lucky positive mean as skill (Reliable-Eval small-sample concern).
+    Uses sample std (ddof=1). Returns None if n < 2 or std == 0."""
+    import statistics as _st
+    n = len(returns)
+    if n < 2:
+        return None
+    sd = _st.stdev(returns)  # sample std (ddof=1)
+    if sd <= 0:
+        return None
+    return (sum(returns) / n) / (sd / (n ** 0.5))
 
 
 def _binomial_sf(k: int, n: int, p: float = 0.5) -> float | None:

@@ -159,11 +159,24 @@ def test_binomial_sf():
     check("clamps k>n", abs(B(9, 5) - B(5, 5)) < 1e-9)
 
 
+def test_t_stat():
+    # One-sample t-stat on decision returns vs zero (skill-vs-noise guard).
+    from app.eval.harness import _t_stat as T
+    check("n<2 -> None", T([0.05]) is None)
+    check("zero variance -> None", T([0.02, 0.02, 0.02]) is None)
+    consistent = T([0.03, 0.04, 0.035, 0.038, 0.032])  # tight, all positive
+    noisy = T([0.03, -0.20, 0.25, -0.18, 0.04])         # same-ish mean, huge spread
+    check("consistent positive -> large t", consistent is not None and consistent > 3)
+    check("noisy -> small |t|", noisy is not None and abs(noisy) < abs(consistent))
+    check("sign follows mean", T([-0.03, -0.04, -0.035, -0.038]) < 0)
+
+
 def main():
     for fn in [test_selective_consensus, test_portfolio_builder, test_news_sentiment,
                test_score_decision_alpha, test_reflect_critique, test_style_levels,
                test_verifier_gate, test_correlation_dampening, test_apply_cap, test_cvar,
-               test_no_oversuppression, test_contamination_flag, test_binomial_sf]:
+               test_no_oversuppression, test_contamination_flag, test_binomial_sf,
+               test_t_stat]:
         try:
             fn()
         except Exception as e:
