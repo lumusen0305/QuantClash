@@ -441,7 +441,26 @@ def get_insider_activity(ticker: str) -> str:
         return f"Insider data unavailable for {ticker}: {e}"
 
 
+@tool
+def get_full_snapshot(ticker: str) -> str:
+    """One-shot comprehensive read for a ticker: price/ATR/RSI/levels/CVaR/ADX/
+    earnings + relative strength vs SPY + news sentiment + insider activity.
+    Prefer this over calling the individual tools separately — fewer rounds."""
+    t = ticker.upper()
+    parts = []
+    lv = compute_levels(t)
+    if lv:
+        parts.append(levels_text(lv))
+    for fn in (get_relative_strength, get_recent_news, get_insider_activity):
+        try:
+            parts.append(fn.invoke({"ticker": t}))
+        except Exception:
+            pass
+    return "\n".join(parts) if parts else f"No data for {t}."
+
+
 PRICING_TOOLS = [
+    get_full_snapshot,
     get_technical_levels,
     get_fundamentals_snapshot,
     get_price_history,
