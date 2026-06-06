@@ -211,10 +211,12 @@ def score(label: str, cost_bps: float | None = None, to_date: str | None = None)
     scored_rows = []
     earliest = min((as_of for _, as_of, *_ in rows), default=None)
     cost_legs = []  # track per-leg bps actually applied (for reporting)
+    unscored = 0  # rows with no price data to score (failure-breakdown disclosure)
     for ticker, as_of, action, conf, ref in rows:
         s = cache.setdefault(ticker, _closes(ticker))
         fr = forward_return(ticker, as_of, s, to_date)
         if fr is None:
+            unscored += 1
             continue
         bh_by_ticker.setdefault(ticker, fr)  # earliest decision's hold return
         item = {"ticker": ticker, "as_of": as_of, "action": action,
@@ -273,12 +275,16 @@ def score(label: str, cost_bps: float | None = None, to_date: str | None = None)
     excess = (strat_net - buy_hold) if (strat_net is not None and buy_hold is not None) else None
     # Is the mean decision return distinguishable from zero, or just noise?
     t_stat = _t_stat(net_returns)
+    scored_n = directional + holds  # rows that actually had price data to score
     return {
         "label": label,
         "n": len(rows),
+        "scored": scored_n,
+        "unscored": unscored,  # failure breakdown: rows with no price data (audit 2605.21404)
         "directional": directional,
         "holds": holds,
-        "hold_rate": round(holds / len(rows), 3) if rows else None,
+        # rate over SCOREABLE rows, not all rows — unscoreable rows must not dilute it
+        "hold_rate": round(holds / scored_n, 3) if scored_n else None,
         "note": ("all/mostly HOLD — no directional bets to score; in a flat/uncertain "
                  "regime this avoids losses but forgoes gains (compare vs buy_hold)."
                  if directional == 0 else None),
