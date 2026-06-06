@@ -55,6 +55,18 @@ def _init_db():
                 UNIQUE(label, ticker, as_of_date)
             )
         """)
+        # Cohort-level provenance (audit 2605.21404 "inference settings"): which
+        # model/language/kind produced a labelled cohort, so cloud-vs-local-GPU
+        # agent runs are distinguishable on the leaderboard. Additive sidecar.
+        c.execute("""
+            CREATE TABLE IF NOT EXISTS eval_cohort_meta (
+                label TEXT PRIMARY KEY,
+                model TEXT,
+                language TEXT,
+                kind TEXT,
+                created_at TEXT
+            )
+        """)
         c.commit()
 
 
@@ -112,6 +124,33 @@ def is_fallback_failure(reasoning: str | None) -> bool:
     pollute hold_rate/n and be scored as if they were real HOLD decisions. Keep
     this prefix in sync with portfolio_manager's fallback reasoning."""
     return (reasoning or "").startswith("Portfolio manager failed")
+
+
+def set_cohort_meta(label: str, model: str | None = None, language: str | None = None,
+                    kind: str | None = None) -> None:
+    """Record cohort-level provenance (which model/language/kind produced a labelled
+    cohort) so cloud-vs-local-GPU agent runs are distinguishable. Upsert by label."""
+    _init_db()
+    with sqlite3.connect(_DB) as c:
+        c.execute(
+            "INSERT OR REPLACE INTO eval_cohort_meta (label, model, language, kind, created_at) "
+            "VALUES (?,?,?,?,?)",
+            (label, model, language, kind, datetime.utcnow().isoformat()),
+        )
+        c.commit()
+
+
+def get_cohort_meta(label: str) -> dict | None:
+    """Provenance for a cohort label, or None if none recorded."""
+    _init_db()
+    with sqlite3.connect(_DB) as c:
+        row = c.execute(
+            "SELECT model, language, kind, created_at FROM eval_cohort_meta WHERE label=?",
+            (label,),
+        ).fetchone()
+    if not row:
+        return None
+    return {"model": row[0], "language": row[1], "kind": row[2], "created_at": row[3]}
 
 
 def record_decision(label: str, ticker: str, as_of_date: str, action: str,

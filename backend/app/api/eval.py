@@ -129,6 +129,8 @@ async def eval_agent_run(req: AgentRunRequest):
         )
         recorded.append({"ticker": ticker, "action": action,
                          "confidence": fd.get("confidence")})
+    if recorded:
+        harness.set_cohort_meta(req.label, model=req.model, language=req.language, kind="agent")
     out = {"label": req.label, "as_of_date": as_of, "recorded": len(recorded),
            "decisions": recorded}
     if skipped:
@@ -176,4 +178,7 @@ async def eval_labels():
         rows = c.execute(
             "SELECT label, COUNT(*) FROM eval_decisions GROUP BY label"
         ).fetchall()
-    return {"labels": [{"label": l, "count": n} for l, n in rows]}
+        meta = dict(c.execute(
+            "SELECT label, model FROM eval_cohort_meta"
+        ).fetchall())
+    return {"labels": [{"label": l, "count": n, "model": meta.get(l)} for l, n in rows]}

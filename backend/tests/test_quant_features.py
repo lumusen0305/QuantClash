@@ -323,6 +323,29 @@ def test_is_fallback_failure():
     check("empty safe", F("") is False)
 
 
+def test_cohort_meta():
+    # Isolated temp DB so we don't touch the real eval.db.
+    import tempfile, os
+    from app.eval import harness as H
+    orig = H._DB
+    tmp = os.path.join(tempfile.gettempdir(), "qc_test_eval_meta.db")
+    if os.path.exists(tmp):
+        os.remove(tmp)
+    H._DB = tmp
+    try:
+        check("no meta -> None", H.get_cohort_meta("nope") is None)
+        H.set_cohort_meta("agent_x", model="qwen3:8b", language="en", kind="agent")
+        m = H.get_cohort_meta("agent_x")
+        check("meta roundtrips model", m and m["model"] == "qwen3:8b")
+        check("meta roundtrips kind", m and m["kind"] == "agent")
+        H.set_cohort_meta("agent_x", model="gemini-2.5-flash")  # upsert
+        check("meta upserts", H.get_cohort_meta("agent_x")["model"] == "gemini-2.5-flash")
+    finally:
+        H._DB = orig
+        if os.path.exists(tmp):
+            os.remove(tmp)
+
+
 def main():
     for fn in [test_selective_consensus, test_portfolio_builder, test_news_sentiment,
                test_score_decision_alpha, test_reflect_critique, test_style_levels,
@@ -331,7 +354,8 @@ def main():
                test_t_stat, test_two_sided_p_and_bonferroni, test_forward_return_horizon,
                test_faithfulness, test_faithfulness_non_mutating, test_brier_score,
                test_tally_wins, test_verdict, test_metric_direction, test_action_stability,
-               test_confidence_discrimination, test_max_drawdown, test_is_fallback_failure]:
+               test_confidence_discrimination, test_max_drawdown, test_is_fallback_failure,
+               test_cohort_meta]:
         try:
             fn()
         except Exception as e:
