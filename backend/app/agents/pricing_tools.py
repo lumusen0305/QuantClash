@@ -361,6 +361,35 @@ def get_recent_news(ticker: str) -> str:
 
 
 @tool
+def get_peer_news(tickers: str) -> str:
+    """Check recent NEWS SENTIMENT of a stock's PEERS / supply-chain names
+    (pass a comma-separated list, e.g. 'AMD,TSM,AVGO' for NVDA). Cross-company
+    news propagates — a supplier's or peer's bad news is an early signal for the
+    stock before its own price reacts (semantic contagion, arXiv 2606.05733)."""
+    syms = [s.strip().upper() for s in tickers.replace(" ", ",").split(",") if s.strip()][:6]
+    if not syms:
+        return "No peer tickers provided."
+    lines = []
+    scores = []
+    for s in syms:
+        try:
+            items = _fetch_yahoo_rss(s) or []
+            if not items:
+                continue
+            sent = _news_sentiment(items)
+            scores.append(sent["score"])
+            flag = (" ⚠" + ",".join(sent["risk_flags"])) if sent["risk_flags"] else ""
+            lines.append(f"{s}: sentiment {sent['score']:+.2f} ({sent['n']} hl){flag}")
+        except Exception:
+            continue
+    if not scores:
+        return f"No peer news available for {syms}."
+    avg = sum(scores) / len(scores)
+    tilt = "peers POSITIVE" if avg > 0.15 else "peers NEGATIVE (contagion risk)" if avg < -0.15 else "peers mixed"
+    return (f"Peer news (contagion check) — avg {avg:+.2f}, {tilt}:\n- " + "\n- ".join(lines))
+
+
+@tool
 def get_relative_strength(ticker: str) -> str:
     """Get the stock's relative strength vs the S&P 500 (SPY) over 1m/3m — is it
     LEADING or LAGGING the market? Relative strength is a classic factor: leaders
@@ -418,6 +447,7 @@ PRICING_TOOLS = [
     get_price_history,
     get_insider_activity,
     get_relative_strength,
+    get_peer_news,
     get_recent_news,
 ]
 
