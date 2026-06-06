@@ -129,7 +129,9 @@ def _days_to_earnings(ticker: str):
 def compute_levels(ticker: str) -> dict | None:
     """Deterministic price/technical snapshot. Returns None if no data."""
     try:
-        hist = _history(ticker, "6mo")
+        # 1y so MA200 (and the golden/death-cross regime) actually compute;
+        # 6mo (~126 bars) was never enough for the 200-day average.
+        hist = _history(ticker, "1y")
         if hist is None or hist.empty:
             return None
         close = hist["Close"]
@@ -224,6 +226,11 @@ def levels_text(levels: dict) -> str:
         f"- 60d low / high: ${levels['low_60d']} / ${levels['high_60d']}\n"
         f"- MA20 / MA50 / MA200: {levels['ma20']} / {levels['ma50']} / {levels['ma200']}\n"
         f"- ADX(14): {levels.get('adx14')} (>25 = strong trend) · OBV trend: {levels.get('obv_trend')}\n"
+        + (("- Trend regime: GOLDEN CROSS (MA50>MA200, structural uptrend)\n"
+            if levels["ma50"] > levels["ma200"]
+            else "- Trend regime: DEATH CROSS (MA50<MA200, structural downtrend)\n")
+           if isinstance(levels.get("ma50"), (int, float)) and isinstance(levels.get("ma200"), (int, float))
+           else "")
         + (f"- CVaR(5%): {levels['cvar5']:.1%} daily tail-loss — if severe (worse than "
            "-4%), treat downside as high: tighten stops / size down / prefer HOLD.\n"
            if levels.get("cvar5") is not None else "")
