@@ -148,6 +148,7 @@ export function EvalPanel() {
               <span>windows: <strong>{roll.beats_buy_hold_windows ?? '—'}</strong></span>
               <span>binomial p: <strong>{typeof roll.binomial_p_vs_coinflip === 'number' ? roll.binomial_p_vs_coinflip.toFixed(2) : '—'}</strong></span>
               <span>flip rate: <strong>{typeof roll.action_stability?.mean_flip_rate === 'number' ? roll.action_stability.mean_flip_rate.toFixed(2) : '—'}</strong></span>
+              <span>max DD: <strong>{typeof roll.max_drawdown === 'number' ? `${(roll.max_drawdown * 100).toFixed(1)}%` : '—'}</strong></span>
             </div>
           </div>
         )}

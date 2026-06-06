@@ -581,6 +581,7 @@ export interface RollingBacktest {
   robust?: boolean;
   binomial_p_vs_coinflip?: number | null;
   significant_vs_coinflip?: boolean;
+  max_drawdown?: number | null;
   verdict?: string;
   excess_vs_buyhold?: { mean?: number | null; std?: number | null };
   action_stability?: { mean_flip_rate?: number | null; tickers?: number };

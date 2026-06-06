@@ -301,6 +301,17 @@ def test_confidence_discrimination():
     check("all-equal conf -> None", D([(0.5, 1.0), (0.5, 0.0), (0.5, 1.0), (0.5, 0.0)])["discrimination"] is None)
 
 
+def test_max_drawdown():
+    from app.eval.harness import _max_drawdown as M
+    check("too few -> None", M([0.05]) is None)
+    check("all up -> 0", M([0.1, 0.1, 0.1]) == 0.0)
+    # +10% then -20% then +5%: peak 1.1, trough 0.88 -> dd = (0.88-1.1)/1.1 = -0.2
+    check("single drop dd", abs(M([0.10, -0.20, 0.05]) - (-0.20)) < 1e-4)
+    # monotonic decline compounds the drawdown
+    check("decline dd negative", M([-0.1, -0.1, -0.1]) < -0.25)
+    check("flat -> 0", M([0.0, 0.0]) == 0.0)
+
+
 def main():
     for fn in [test_selective_consensus, test_portfolio_builder, test_news_sentiment,
                test_score_decision_alpha, test_reflect_critique, test_style_levels,
@@ -309,7 +320,7 @@ def main():
                test_t_stat, test_two_sided_p_and_bonferroni, test_forward_return_horizon,
                test_faithfulness, test_faithfulness_non_mutating, test_brier_score,
                test_tally_wins, test_verdict, test_metric_direction, test_action_stability,
-               test_confidence_discrimination]:
+               test_confidence_discrimination, test_max_drawdown]:
         try:
             fn()
         except Exception as e:

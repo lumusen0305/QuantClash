@@ -480,6 +480,28 @@ def _verdict(beats_str: str, robust: bool, significant: bool,
     return f"{head}: {direction}, won {beats_str} windows, {rob}, {sig}."
 
 
+def _max_drawdown(returns: list) -> float | None:
+    """Max peak-to-trough drawdown of an equity curve built by compounding an
+    ORDERED series of period returns. Returned as a non-positive fraction (0 = no
+    drawdown, -0.15 = 15% peak-to-trough). MDD is the single most-reported risk
+    metric across trading benchmarks (AlphaForgeBench, LLM-TradeBot et al.) and is
+    path-dependent — distinct from sortino (aggregate downside deviation). Needs
+    chronologically-ordered returns; None if fewer than 2."""
+    if len(returns) < 2:
+        return None
+    equity = 1.0
+    peak = 1.0
+    mdd = 0.0
+    for r in returns:
+        equity *= (1.0 + r)
+        if equity > peak:
+            peak = equity
+        dd = (equity - peak) / peak if peak > 0 else 0.0
+        if dd < mdd:
+            mdd = dd
+    return round(mdd, 4)
+
+
 def _aggregate_scores(scored: list, labels: list, overlapping: bool = True) -> dict:
     """Aggregate already-computed per-window score dicts into a robustness summary.
     `overlapping` marks whether the windows share future measurement periods (the
@@ -501,6 +523,11 @@ def _aggregate_scores(scored: list, labels: list, overlapping: bool = True) -> d
     beats = sum(1 for s in usable if s.get("beats_buy_hold") is True)
     n = len(usable)
     p = _binomial_sf(beats, n)  # P(>= beats wins | coin-flip null)
+    # Max drawdown of the equity curve built from the ordered per-window returns
+    # (meaningful only when windows are chronological, e.g. a rolling backtest).
+    ordered_rets = [s["strategy_return"] for s in usable
+                    if isinstance(s.get("strategy_return"), (int, float))]
+    mdd = _max_drawdown(ordered_rets)
     out = {
         "labels": labels,
         "windows": n,
@@ -515,6 +542,7 @@ def _aggregate_scores(scored: list, labels: list, overlapping: bool = True) -> d
         # n are noise.) Needs >=5 windows to possibly reach p<0.05.
         "binomial_p_vs_coinflip": round(p, 4) if p is not None else None,
         "significant_vs_coinflip": (p is not None and p < 0.05 and n >= 5),
+        "max_drawdown": mdd,  # peak-to-trough of compounded ordered window returns (<=0)
         "windows_overlapping": overlapping,
     }
     out["verdict"] = _verdict(out["beats_buy_hold_windows"], out["robust"],
