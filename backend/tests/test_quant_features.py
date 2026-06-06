@@ -81,6 +81,18 @@ def test_style_levels():
     check("HOLD -> None", style_levels(lv, "HOLD", "balanced") is None)
 
 
+def test_no_oversuppression():
+    # Guard against a "negative optimization": the consensus layer must NOT block
+    # a confident BUY when analysts strongly align (else the agent always-HOLDs).
+    from app.agents.managers.portfolio_manager import _selective_consensus as C
+    strong = C([("Technical", "bullish", .85), ("Fundamentals", "bullish", .8),
+                ("News", "bullish", .75), ("Macro", "bullish", .7),
+                ("MarketResearch", "bullish", .8), ("Sentiment", "neutral", .4)])
+    check("strong panel not divergent", strong["divergent"] is False)
+    check("strong panel high agreement", strong["agreement"] >= 0.7)
+    check("strong panel bullish lean", "BULLISH" in strong["lean"])
+
+
 def test_verifier_gate():
     from app.agents.managers.portfolio_manager import _verify_decision
     from app.agents.schemas import FinalDecision
@@ -130,7 +142,8 @@ def test_cvar():
 def main():
     for fn in [test_selective_consensus, test_portfolio_builder, test_news_sentiment,
                test_score_decision_alpha, test_reflect_critique, test_style_levels,
-               test_verifier_gate, test_correlation_dampening, test_apply_cap, test_cvar]:
+               test_verifier_gate, test_correlation_dampening, test_apply_cap, test_cvar,
+               test_no_oversuppression]:
         try:
             fn()
         except Exception as e:
