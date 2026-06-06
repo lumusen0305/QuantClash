@@ -61,12 +61,22 @@ correlation dampening, cap redistribution, CVaR.
 Scores any config by realized **forward returns**, addressing the 5 evaluation
 failures from Reliable-Eval (2603.27539):
 
-- **net-of-cost** returns (`cost_bps`) — §4.4
+- **net-of-cost** returns, **asset-class-aware** per-leg cost (`_cost_bps_for`) — §4.4 / §6.2.2
 - **regime/benchmark** tagging (SPY) — §4.5
 - **buy-and-hold bar** (`excess_vs_buyhold`, `beats_buy_hold`) — StockBench (2510.02209)
-- **dispersion** (`strategy_return_std`, `return_over_risk`)
+- **dispersion** (`strategy_return_std`, `return_over_risk`), **Sortino**
 - **rolling-window robustness** (`aggregate(labels)`, `/eval/aggregate`) — §4.6 #3
-- alpha + hold-rate + A/B `compare`
+- **leaderboard** (`/eval/leaderboard`) — rank all cohorts; alpha + hold-rate + A/B `compare`
+- cohorts: deterministic baselines (tech / mean-reversion), full-DAG `agent-run`, and `factor-cohort` (factor screener's top-N); UI in the Workspace **Strategy Eval** panel (single / compare / 🏆 leaderboard)
+
+## Pricing-agent tools (`pricing_tools.PRICING_TOOLS`, bound to the decision agent)
+
+`get_full_snapshot` (one-shot: levels+CVaR+ADX+earnings + RS + news + insider),
+`get_technical_levels`, `get_fundamentals_snapshot` (incl. PEG, analyst target,
+**short interest**), `get_price_history`, `get_relative_strength` (vs SPY),
+`get_peer_news` (cross-company contagion, arXiv 2606.05733), `get_insider_activity`,
+`get_recent_news` (sentiment + breadth + risk catalysts). Guarded against tool
+hallucination (`_TOOL_GUARD`, arXiv 2510.22977).
 
 ### Usage
 ```bash
