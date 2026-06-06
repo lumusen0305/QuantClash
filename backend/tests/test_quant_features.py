@@ -323,6 +323,52 @@ def test_is_fallback_failure():
     check("empty safe", F("") is False)
 
 
+def test_score_pipeline_synthetic():
+    # End-to-end score() on synthetic prices (no network) so the FULL composition
+    # — hit_rate, net-of-cost, buy_hold, excess, brier, hold_rate denominator — is
+    # verified against hand-computed values. Catches integration bugs that
+    # per-helper unit tests miss. Monkeypatches _closes and _DB; no prod change.
+    import os, tempfile
+    import pandas as pd
+    from app.eval import harness as H
+    idx = ["2026-01-01", "2026-06-01"]
+    series = {
+        "AAA": pd.Series([100.0, 110.0], index=idx),   # +10%
+        "BBB": pd.Series([100.0, 90.0], index=idx),    # -10%
+        "CCC": pd.Series([100.0, 105.0], index=idx),   # +5%
+        "SPY": pd.Series([400.0, 420.0], index=idx),   # +5% benchmark
+    }
+    orig_db, orig_closes = H._DB, H._closes
+    tmp = os.path.join(tempfile.gettempdir(), "qc_test_score_pipeline.db")
+    if os.path.exists(tmp):
+        os.remove(tmp)
+    H._DB = tmp
+    H._closes = lambda t, period="1y": series.get(t)
+    try:
+        H.record_decision("syn", "AAA", "2026-01-01", "BUY", 0.8, 100.0)
+        H.record_decision("syn", "BBB", "2026-01-01", "SELL", 0.7, 100.0)
+        H.record_decision("syn", "CCC", "2026-01-01", "HOLD", 0.4, 100.0)
+        s = H.score("syn", cost_bps=10.0)  # flat cost -> no _cost_bps_for network
+        check("n=3", s["n"] == 3)
+        check("scored=3", s["scored"] == 3)
+        check("directional=2", s["directional"] == 2)
+        check("holds=1", s["holds"] == 1)
+        check("hold_rate=1/3", abs(s["hold_rate"] - 0.333) < 0.01)
+        check("hit_rate=1.0 (both right)", s["hit_rate"] == 1.0)
+        # BUY +10% and SELL on -10% both favour +10%; net = 0.10 - 2*0.001 = 0.098
+        check("net return 0.098", abs(s["strategy_return"] - 0.098) < 1e-6)
+        # buy-hold = equal-weight raw fwd of all 3 names = (0.10-0.10+0.05)/3
+        check("buy_hold 0.0167", abs(s["buy_hold_return"] - 0.0167) < 1e-3)
+        check("beats buy-hold", s["beats_buy_hold"] is True)
+        # brier = ((0.8-1)^2 + (0.7-1)^2)/2 = 0.065
+        check("brier 0.065", abs(s["brier_score"] - 0.065) < 1e-6)
+        check("calibration_gap 0.25", abs(s["calibration_gap"] - 0.25) < 1e-6)
+    finally:
+        H._DB, H._closes = orig_db, orig_closes
+        if os.path.exists(tmp):
+            os.remove(tmp)
+
+
 def test_cohort_meta():
     # Isolated temp DB so we don't touch the real eval.db.
     import tempfile, os
@@ -355,7 +401,7 @@ def main():
                test_faithfulness, test_faithfulness_non_mutating, test_brier_score,
                test_tally_wins, test_verdict, test_metric_direction, test_action_stability,
                test_confidence_discrimination, test_max_drawdown, test_is_fallback_failure,
-               test_cohort_meta]:
+               test_cohort_meta, test_score_pipeline_synthetic]:
         try:
             fn()
         except Exception as e:
