@@ -141,10 +141,12 @@ def rolling_backtest(tickers: list, start_date: str, end_date: str,
         agg = _aggregate_scores(scored, labels, overlapping=False)
     else:
         agg = aggregate(labels)
+    from app.eval.harness import action_stability_across
     agg["strategy"] = strategy
     agg["windows_generated"] = len(labels)
     agg["step_days"] = step_days
     agg["non_overlapping"] = non_overlapping
+    agg["action_stability"] = action_stability_across(labels)  # AlphaForgeBench flip-rate
     return agg
 
 

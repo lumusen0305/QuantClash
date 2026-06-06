@@ -276,6 +276,16 @@ def test_metric_direction():
     check("unknown defaults higher", H("hit_rate") and H("some_new_metric"))
 
 
+def test_action_stability():
+    from app.eval.harness import _action_stability as S
+    check("too few -> None", S(["BUY"])["flip_rate"] is None)
+    check("perfectly stable -> 0", S(["BUY", "BUY", "BUY"])["flip_rate"] == 0.0)
+    check("always flips -> 1", S(["BUY", "SELL", "BUY", "SELL"])["flip_rate"] == 1.0)
+    check("HOLD is neutral", S(["BUY", "HOLD", "BUY"])["flip_rate"] == 0.0)
+    check("one flip of two transitions", S(["BUY", "BUY", "SELL"])["flip_rate"] == 0.5)
+    check("counts directional only", S(["HOLD", "BUY", "SELL"])["n_directional"] == 2)
+
+
 def main():
     for fn in [test_selective_consensus, test_portfolio_builder, test_news_sentiment,
                test_score_decision_alpha, test_reflect_critique, test_style_levels,
@@ -283,7 +293,7 @@ def main():
                test_no_oversuppression, test_contamination_flag, test_binomial_sf,
                test_t_stat, test_two_sided_p_and_bonferroni, test_forward_return_horizon,
                test_faithfulness, test_faithfulness_non_mutating, test_brier_score,
-               test_tally_wins, test_verdict, test_metric_direction]:
+               test_tally_wins, test_verdict, test_metric_direction, test_action_stability]:
         try:
             fn()
         except Exception as e:

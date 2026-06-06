@@ -340,6 +340,52 @@ def _tally_wins(better: dict, label_a: str, label_b: str):
     return wins_a, wins_b, overall
 
 
+def _action_stability(actions: list) -> dict:
+    """Flip rate over an ordered action sequence. AlphaForgeBench (arXiv 2602.18481):
+    LLM trading agents irrationally flip BUY<->SELL between adjacent time steps,
+    undermining reliability. Counts direction reversals between consecutive
+    DIRECTIONAL actions (HOLD is neutral — neither a step nor a flip). Lower is
+    more stable; None if fewer than 2 directional actions."""
+    dirs = [a for a in (str(x).upper() for x in actions) if a in ("BUY", "SELL")]
+    if len(dirs) < 2:
+        return {"flip_rate": None, "transitions": 0, "flips": 0, "n_directional": len(dirs)}
+    trans = len(dirs) - 1
+    flips = sum(1 for i in range(1, len(dirs)) if dirs[i] != dirs[i - 1])
+    return {"flip_rate": round(flips / trans, 3), "transitions": trans,
+            "flips": flips, "n_directional": len(dirs)}
+
+
+def action_stability_across(labels: list) -> dict:
+    """Mean per-ticker BUY<->SELL flip rate across an ordered set of window labels
+    (e.g. a rolling backtest) — measures a strategy's action instability over time
+    (AlphaForgeBench). Deterministic baselines should be relatively stable; a
+    flighty LLM strategy will score high."""
+    if not labels:
+        return {"mean_flip_rate": None, "tickers": 0}
+    _init_db()
+    ph = ",".join("?" * len(labels))
+    with sqlite3.connect(_DB) as c:
+        rows = c.execute(
+            f"SELECT ticker, as_of_date, action FROM eval_decisions WHERE label IN ({ph})",
+            list(labels),
+        ).fetchall()
+    by_ticker: dict[str, list] = {}
+    for t, d, a in rows:
+        by_ticker.setdefault(t, []).append((d, a))
+    rates = []
+    for t, seq in by_ticker.items():
+        seq.sort()  # chronological by as_of_date
+        st = _action_stability([a for _, a in seq])
+        if st["flip_rate"] is not None:
+            rates.append(st["flip_rate"])
+    if not rates:
+        return {"mean_flip_rate": None, "tickers": 0,
+                "note": "not enough directional decisions per ticker to assess stability"}
+    return {"mean_flip_rate": round(sum(rates) / len(rates), 3), "tickers": len(rates),
+            "note": ("mean fraction of adjacent same-ticker decisions that reversed "
+                     "BUY<->SELL (AlphaForgeBench instability; lower = more stable)")}
+
+
 def _brier_score(pairs: list) -> float | None:
     """Brier score = mean((confidence - outcome)^2) over (confidence, outcome01)
     pairs — a PROPER scoring rule for probabilistic forecasts (lower is better;
