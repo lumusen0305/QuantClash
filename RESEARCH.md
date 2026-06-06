@@ -67,7 +67,22 @@ failures from Reliable-Eval (2603.27539):
 - **dispersion** (`strategy_return_std`, `return_over_risk`), **Sortino**
 - **rolling-window robustness** (`aggregate(labels)`, `/eval/aggregate`) — §4.6 #3
 - **leaderboard** (`/eval/leaderboard`) — rank all cohorts; alpha + hold-rate + A/B `compare`
-- cohorts: deterministic baselines (tech / mean-reversion), full-DAG `agent-run`, and `factor-cohort` (factor screener's top-N); UI in the Workspace **Strategy Eval** panel (single / compare / 🏆 leaderboard)
+- cohorts: deterministic baselines (tech / mean-reversion / momentum), full-DAG `agent-run`, and `factor-cohort` (factor screener's top-N); UI in the Workspace **Strategy Eval** panel (single / compare / 🏆 leaderboard)
+
+### Statistical rigor (added to fight luck/overfitting, all `tests/test_quant_features.py`-guarded)
+- **contamination control** (`predates_llm_cutoff`, `LLM_TRAINING_CUTOFF`) — flag windows before the LLM training cutoff as look-ahead risk for LLM cohorts — Reliable-Eval #1
+- **FINSABER rolling backtest** (`rolling_backtest`, `/eval/rolling-backtest`) — auto-generates many step-date cohorts over a long horizon — arXiv 2505.07078
+- **non-overlapping fixed-horizon windows** (`forward_return(to_date=)`, `score(to_date=)`, `non_overlapping=True`) — windows measured to-latest-close overlap → autocorrelated → invalid significance; fixed horizons make them independent (purged-CV / embargo) — purged cross-validation
+- **window-level binomial test** (`_binomial_sf`, `binomial_p_vs_coinflip`) — is beating buy-hold across windows distinguishable from a coin flip?
+- **decision-level t-statistic** (`_t_stat`, `return_t_stat`) — is the mean per-decision return distinguishable from zero?
+- **selection-bias guard** (`leaderboard.selection_bias`) — winner's p-value Bonferroni-adjusted by #trials — López de Prado backtest overfitting
+- **Brier score** (`_brier_score`, proper calibration scoring rule; 0.25 = no-skill) — sharper than `calibration_gap` — TrustTrade/Reliable-Eval
+- **direction-aware ranking** (`_metric_higher_is_better`) — leaderboard ranks lower-is-better metrics (p-value, calibration, vol) correctly
+- **plain-language verdict** (`_verdict`) — one line combining economic edge + statistical strength
+- **A/B win tally** (`compare.overall`, `_tally_wins`) — headline winner across the full scorecard (returns, risk-adjusted, calibration)
+
+### Decision faithfulness (`portfolio_manager._reasoning_faithfulness`)
+Flags (non-mutating; never blocks/penalizes) a stark reasoning↔action contradiction — e.g. action BUY but the rationale leans bearish — TradeTrap (2512.02261).
 
 ## Pricing-agent tools (`pricing_tools.PRICING_TOOLS`, bound to the decision agent)
 
@@ -87,11 +102,14 @@ POST /eval/agent-run {"tickers":[...], "label":"agent"}
 GET  /eval/score?label=agent
 GET  /eval/compare?a=agent&b=bl
 GET  /eval/aggregate?labels=bl_w1,bl_w2,bl_w3   # robustness across windows
+# FINSABER rolling backtest (auto multi-window; non-overlapping = valid significance)
+POST /eval/rolling-backtest {"start_date":"2025-06-01","end_date":"2025-11-01","strategy":"tech_baseline","step_days":30}
 ```
 
-Baseline validation (2026-06-06): naive trend-following is **robustly weak** —
-beats buy-and-hold 0/3 windows, mean excess −12%. That is the bar the LLM agent
-must clear; its forward-test (`agent_2026-06-06`) is accruing.
+Baseline validation (verified 2026-06-06 on real 2025 data, **non-overlapping**
+windows): `tech_baseline` has **NO edge** — trails buy-and-hold by ~0.8%/window,
+beats it 2/4 windows, not robust, binomial p=0.69 (not significant). That is the
+bar the LLM agent must clear; its forward-test (`agent_2026-06-06`) is accruing.
 
 ## Local GPU
 `qwen3:8b` via Ollama (Trading-R1's Qwen3 family) is selectable in the model
