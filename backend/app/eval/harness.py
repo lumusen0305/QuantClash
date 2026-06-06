@@ -389,6 +389,24 @@ def _binomial_sf(k: int, n: int, p: float = 0.5) -> float | None:
     return sum(math.comb(n, i) * p ** i * (1 - p) ** (n - i) for i in range(k, n + 1))
 
 
+def _verdict(beats_str: str, robust: bool, significant: bool,
+             excess_mean: float | None) -> str:
+    """Turn the aggregate metrics into one plain-language conclusion, so a human
+    doesn't have to read the grid. Headline reflects BOTH economic edge (excess
+    vs buy-hold) and statistical strength (robust across windows + significant)."""
+    em = excess_mean or 0.0
+    direction = ("beats" if em > 0 else "trails") + f" buy-hold by {abs(em) * 100:.1f}%/window avg"
+    sig = "significant" if significant else "not significant"
+    rob = "robust (every window)" if robust else "not robust"
+    if em > 0 and robust and significant:
+        head = "EDGE"
+    elif em > 0:
+        head = "possible weak edge"
+    else:
+        head = "NO edge"
+    return f"{head}: {direction}, won {beats_str} windows, {rob}, {sig}."
+
+
 def _aggregate_scores(scored: list, labels: list, overlapping: bool = True) -> dict:
     """Aggregate already-computed per-window score dicts into a robustness summary.
     `overlapping` marks whether the windows share future measurement periods (the
@@ -426,6 +444,9 @@ def _aggregate_scores(scored: list, labels: list, overlapping: bool = True) -> d
         "significant_vs_coinflip": (p is not None and p < 0.05 and n >= 5),
         "windows_overlapping": overlapping,
     }
+    out["verdict"] = _verdict(out["beats_buy_hold_windows"], out["robust"],
+                              out["significant_vs_coinflip"],
+                              out["excess_vs_buyhold"].get("mean"))
     if overlapping:
         out["overlap_warning"] = (
             "windows measured to latest close overlap (autocorrelated) — the binomial "

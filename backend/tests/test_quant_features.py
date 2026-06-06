@@ -256,6 +256,17 @@ def test_tally_wins():
     check("even -> tie", ov2 == "tie")
 
 
+def test_verdict():
+    from app.eval.harness import _verdict as V
+    edge = V("5/5", True, True, 0.02)
+    check("edge headline", edge.startswith("EDGE") and "beats" in edge)
+    none = V("1/4", False, False, -0.01)
+    check("no-edge headline", none.startswith("NO edge") and "trails" in none)
+    weak = V("3/4", False, False, 0.005)
+    check("weak edge headline", weak.startswith("possible weak edge"))
+    check("handles None excess", V("0/2", False, False, None).startswith("NO edge"))
+
+
 def main():
     for fn in [test_selective_consensus, test_portfolio_builder, test_news_sentiment,
                test_score_decision_alpha, test_reflect_critique, test_style_levels,
@@ -263,7 +274,7 @@ def main():
                test_no_oversuppression, test_contamination_flag, test_binomial_sf,
                test_t_stat, test_two_sided_p_and_bonferroni, test_forward_return_horizon,
                test_faithfulness, test_faithfulness_non_mutating, test_brier_score,
-               test_tally_wins]:
+               test_tally_wins, test_verdict]:
         try:
             fn()
         except Exception as e:
