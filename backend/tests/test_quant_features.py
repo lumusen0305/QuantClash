@@ -171,12 +171,26 @@ def test_t_stat():
     check("sign follows mean", T([-0.03, -0.04, -0.035, -0.038]) < 0)
 
 
+def test_two_sided_p_and_bonferroni():
+    # Approx two-sided p from t-stat + the multiple-testing logic the leaderboard uses.
+    from app.eval.harness import _two_sided_p_from_t as P
+    check("None t -> None p", P(None) is None)
+    check("t~0 -> p~1", P(0.0) > 0.99)
+    check("t=2 -> p~0.045", 0.03 < P(2.0) < 0.06)
+    check("symmetric in sign", abs(P(2.5) - P(-2.5)) < 1e-9)
+    check("larger |t| -> smaller p", P(3.0) < P(1.0))
+    # Bonferroni inflation: a raw-significant winner can become insignificant
+    raw = P(2.2)
+    check("raw significant", raw < 0.05)
+    check("bonferroni x20 kills it", min(1.0, raw * 20) > 0.05)
+
+
 def main():
     for fn in [test_selective_consensus, test_portfolio_builder, test_news_sentiment,
                test_score_decision_alpha, test_reflect_critique, test_style_levels,
                test_verifier_gate, test_correlation_dampening, test_apply_cap, test_cvar,
                test_no_oversuppression, test_contamination_flag, test_binomial_sf,
-               test_t_stat]:
+               test_t_stat, test_two_sided_p_and_bonferroni]:
         try:
             fn()
         except Exception as e:

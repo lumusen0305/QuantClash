@@ -322,6 +322,16 @@ def _t_stat(returns: list) -> float | None:
     return (sum(returns) / n) / (sd / (n ** 0.5))
 
 
+def _two_sided_p_from_t(t: float | None) -> float | None:
+    """Approximate two-sided p-value for a t-statistic via the normal tail
+    (t -> z for large df): p = erfc(|t| / sqrt(2)). Good enough to flag
+    significance; conservative-ish for small samples. Returns None if t is None."""
+    import math
+    if t is None:
+        return None
+    return math.erfc(abs(t) / math.sqrt(2.0))
+
+
 def _binomial_sf(k: int, n: int, p: float = 0.5) -> float | None:
     """Exact one-sided binomial survival P(X >= k) for X~Binom(n, p). Used to test
     whether a strategy beats buy-and-hold more often than a coin flip would. Pure
@@ -387,14 +397,35 @@ def leaderboard(metric: str = "excess_vs_buyhold") -> dict:
             pending.append({"label": lab, "n": s.get("n"), "holds": s.get("holds"),
                             "note": s.get("note")})
             continue
+        p = _two_sided_p_from_t(s.get("return_t_stat"))
         scored.append({
             "label": lab, "directional": s.get("directional"),
             "hit_rate": s.get("hit_rate"), "strategy_return": s.get("strategy_return"),
             "excess_vs_buyhold": s.get("excess_vs_buyhold"),
             "beats_buy_hold": s.get("beats_buy_hold"), "sortino": s.get("sortino"),
+            "return_t_stat": s.get("return_t_stat"),
+            "return_p_approx": round(p, 4) if p is not None else None,
             "regime": (s.get("window") or {}).get("regime"),
         })
     scored.sort(key=lambda x: (x.get(metric) is not None, x.get(metric)), reverse=True)
     for i, r in enumerate(scored, 1):
         r["rank"] = i
-    return {"metric": metric, "ranked": scored, "pending": pending}
+    # Multiple-testing / selection-bias guard (López de Prado, backtest overfitting):
+    # ranking N strategies and crowning the best inflates its apparent significance.
+    # The winner's p-value must be Bonferroni-adjusted by the number of trials.
+    trials = len(scored)
+    selection_bias = None
+    if scored:
+        top = scored[0]
+        tp = top.get("return_p_approx")
+        selection_bias = {
+            "trials": trials,
+            "winner": top["label"],
+            "winner_p_approx": tp,
+            "winner_p_bonferroni": round(min(1.0, tp * trials), 4) if tp is not None else None,
+            "note": (f"winner chosen from {trials} trials; its return p-value is "
+                     f"Bonferroni-adjusted by x{trials}. A small raw p can still be "
+                     f"insignificant after adjustment (selection bias)."),
+        }
+    return {"metric": metric, "ranked": scored, "pending": pending,
+            "selection_bias": selection_bias}
