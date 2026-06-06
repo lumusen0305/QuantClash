@@ -106,10 +106,22 @@ GET  /eval/aggregate?labels=bl_w1,bl_w2,bl_w3   # robustness across windows
 POST /eval/rolling-backtest {"start_date":"2025-06-01","end_date":"2025-11-01","strategy":"tech_baseline","step_days":30}
 ```
 
-Baseline validation (verified 2026-06-06 on real 2025 data, **non-overlapping**
-windows): `tech_baseline` has **NO edge** — trails buy-and-hold by ~0.8%/window,
-beats it 2/4 windows, not robust, binomial p=0.69 (not significant). That is the
-bar the LLM agent must clear; its forward-test (`agent_2026-06-06`) is accruing.
+Baseline validation (verified on real Jun–Dec 2025 data, **non-overlapping**
+windows, 5 mega-caps, 30d step). All three deterministic baselines, head-to-head:
+
+| strategy | verdict | excess/window | windows won | max DD | flip rate | binomial p |
+|---|---|---|---|---|---|---|
+| tech_baseline | NO edge | −1.2% | 2/5 | −6.9% | 0.25 | 0.81 |
+| mean_reversion | NO edge | −9.7% | 1/5 | **−30.8%** | 0.00 | 0.97 |
+| momentum | possible weak edge | +0.9% | 3/4 | −0.9% | 0.00 | 0.31 |
+
+Findings: (1) `max_drawdown` clearly discriminates risk that return alone hides —
+mean_reversion's −30.8% DD vs momentum's −0.9%. (2) momentum *looks* like it beats
+buy-hold, but the harness **correctly flags it not significant** (p=0.31, only 4
+windows) — so it is NOT promoted to default (no-negative-optimization: an
+unverified edge is not an edge). Buy-and-hold remains the bar the LLM agent must
+clear; the agent forward-test (`agent_2026-06-06`) is still accruing (currently
+all-HOLD, so `compare` returns *incomparable* until it makes directional calls).
 
 ## Local GPU
 `qwen3:8b` via Ollama (Trading-R1's Qwen3 family) is selectable in the model
