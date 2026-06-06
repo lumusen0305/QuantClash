@@ -525,10 +525,11 @@ def run_tool_research(llm, system_prompt: str, max_rounds: int = 3) -> str:
     messages = [
         SystemMessage(content=system_prompt + "\n\n" + _TOOL_GUARD),
         HumanMessage(content=(
-            "Call whichever of the PROVIDED tools you need to ground the entry / "
-            "target / stop prices in real data, then stop calling tools. Don't "
-            "call a tool twice with the same arguments. Do not call any tool that "
-            "is not in the provided list."
+            "Start with get_full_snapshot(ticker) for a comprehensive read (levels, "
+            "CVaR, trend regime, relative strength, news sentiment, insider). Then "
+            "call any other PROVIDED tools you still need to ground the entry / "
+            "target / stop prices in real data, and stop. Don't call a tool twice "
+            "with the same arguments. Do not call any tool not in the provided list."
         )),
     ]
     notes: list[str] = []
