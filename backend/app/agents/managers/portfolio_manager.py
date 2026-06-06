@@ -323,6 +323,8 @@ async def portfolio_manager_node(state: AnalysisState) -> dict:
         decision = FinalDecision(
             action="HOLD",
             confidence=0.1,
+            # NOTE: harness.is_fallback_failure() keys off this "Portfolio manager
+            # failed" prefix to keep these silent failures OUT of eval cohorts.
             reasoning=f"Portfolio manager failed to produce decision: {e}",
             target_price=None,
             stop_loss=None,

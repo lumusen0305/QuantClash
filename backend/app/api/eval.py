@@ -110,12 +110,18 @@ async def eval_agent_run(req: AgentRunRequest):
         set_model_override(None)
 
     recorded = []
+    skipped = 0
     for ticker, res in zip(syms, analyzed):
         if not isinstance(res, dict) or res.get("_error"):
             continue
         fd = res.get("final_decision") or {}
         action = str(fd.get("action", "")).upper()
         if not action:
+            continue
+        # Don't pollute the cohort with silent exception-fallback HOLDs — they
+        # aren't real decisions and would distort hold_rate / scoring.
+        if harness.is_fallback_failure(fd.get("reasoning")):
+            skipped += 1
             continue
         harness.record_decision(
             req.label, ticker, as_of, action, fd.get("confidence"),
@@ -125,6 +131,8 @@ async def eval_agent_run(req: AgentRunRequest):
                          "confidence": fd.get("confidence")})
     out = {"label": req.label, "as_of_date": as_of, "recorded": len(recorded),
            "decisions": recorded}
+    if skipped:
+        out["skipped_failures"] = skipped
     if harness.predates_llm_cutoff(as_of):
         out["contamination_warning"] = (
             f"as_of {as_of} predates the LLM training cutoff — this LLM cohort "

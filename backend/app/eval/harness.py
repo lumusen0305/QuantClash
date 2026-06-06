@@ -105,6 +105,15 @@ def forward_return(ticker: str, as_of_date: str, closes: pd.Series | None = None
     return (latest - base) / base
 
 
+def is_fallback_failure(reasoning: str | None) -> bool:
+    """True if a 'decision' is actually the portfolio_manager's exception fallback
+    (a HOLD conf=0.1 stamped 'Portfolio manager failed to produce decision: ...').
+    Such silent failures must NOT be recorded into an eval cohort — they would
+    pollute hold_rate/n and be scored as if they were real HOLD decisions. Keep
+    this prefix in sync with portfolio_manager's fallback reasoning."""
+    return (reasoning or "").startswith("Portfolio manager failed")
+
+
 def record_decision(label: str, ticker: str, as_of_date: str, action: str,
                     confidence: float | None, ref_price: float | None = None) -> None:
     """Persist one decision under a config label (upsert on label+ticker+date)."""

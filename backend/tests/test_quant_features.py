@@ -315,6 +315,14 @@ def test_max_drawdown():
     check("flat -> 0", M([0.0, 0.0]) == 0.0)
 
 
+def test_is_fallback_failure():
+    from app.eval.harness import is_fallback_failure as F
+    check("fallback flagged", F("Portfolio manager failed to produce decision: boom") is True)
+    check("real HOLD not flagged", F("THESIS: market is mixed; EVIDENCE: ...") is False)
+    check("None safe", F(None) is False)
+    check("empty safe", F("") is False)
+
+
 def main():
     for fn in [test_selective_consensus, test_portfolio_builder, test_news_sentiment,
                test_score_decision_alpha, test_reflect_critique, test_style_levels,
@@ -323,7 +331,7 @@ def main():
                test_t_stat, test_two_sided_p_and_bonferroni, test_forward_return_horizon,
                test_faithfulness, test_faithfulness_non_mutating, test_brier_score,
                test_tally_wins, test_verdict, test_metric_direction, test_action_stability,
-               test_confidence_discrimination, test_max_drawdown]:
+               test_confidence_discrimination, test_max_drawdown, test_is_fallback_failure]:
         try:
             fn()
         except Exception as e:
