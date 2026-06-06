@@ -571,6 +571,26 @@ export const fetchEvalCompare = (a: string, b: string) =>
             wins?: Record<string, number>; overall?: string }>(
     '/eval/compare', { params: { a, b } }).then((r) => r.data);
 
+export interface RollingBacktest {
+  strategy?: string;
+  windows?: number;
+  windows_generated?: number;
+  step_days?: number;
+  beats_buy_hold_windows?: string;
+  robust?: boolean;
+  binomial_p_vs_coinflip?: number | null;
+  significant_vs_coinflip?: boolean;
+  verdict?: string;
+  excess_vs_buyhold?: { mean?: number | null; std?: number | null };
+  action_stability?: { mean_flip_rate?: number | null; tickers?: number };
+  note?: string;
+  error?: string;
+}
+export const runRollingBacktest = (data: {
+  start_date: string; end_date: string; strategy?: string; step_days?: number;
+}) =>
+  api.post<RollingBacktest>('/eval/rolling-backtest', data).then((r) => r.data);
+
 export const fetchActionQueue = (data: {
   watchlist: WatchItem[];
   positions?: Position[];

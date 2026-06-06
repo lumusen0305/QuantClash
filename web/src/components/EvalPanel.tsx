@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { fetchEvalLabels, fetchEvalScore, fetchEvalCompare, fetchEvalLeaderboard, type EvalScore, type LeaderRow } from '../api/client';
+import { fetchEvalLabels, fetchEvalScore, fetchEvalCompare, fetchEvalLeaderboard, runRollingBacktest, type EvalScore, type LeaderRow, type RollingBacktest } from '../api/client';
 
 // Compact strategy-evaluation panel: pick a recorded config label and see how
 // its decisions performed on realized forward returns (net-of-cost, vs buy-hold,
@@ -19,6 +19,9 @@ export function EvalPanel() {
   const [cmpOverall, setCmpOverall] = useState<{ overall?: string; wins?: Record<string, number> } | null>(null);
   const [board, setBoard] = useState<LeaderRow[] | null>(null);
   const [showBoard, setShowBoard] = useState(false);
+  const [roll, setRoll] = useState<RollingBacktest | null>(null);
+  const [rollStrat, setRollStrat] = useState('tech_baseline');
+  const [rollBusy, setRollBusy] = useState(false);
 
   useEffect(() => {
     fetchEvalLabels().then((l) => {
@@ -37,6 +40,22 @@ export function EvalPanel() {
   }, []);
 
   useEffect(() => { if (sel) run(sel); }, [sel, run]);
+
+  // FINSABER robustness backtest: run a strategy across many non-overlapping
+  // windows over the last ~7 months and show the plain-language verdict.
+  const runRoll = useCallback(async () => {
+    setRollBusy(true); setRoll(null);
+    try {
+      const end = new Date();
+      const start = new Date(end.getTime() - 210 * 864e5);
+      const iso = (d: Date) => d.toISOString().slice(0, 10);
+      setRoll(await runRollingBacktest({
+        start_date: iso(start), end_date: iso(end), strategy: rollStrat, step_days: 30,
+      }));
+    } catch (e) {
+      setRoll({ error: e instanceof Error ? e.message : 'failed' });
+    } finally { setRollBusy(false); }
+  }, [rollStrat]);
 
   // A/B compare when a second label is chosen
   useEffect(() => {
@@ -108,6 +127,32 @@ export function EvalPanel() {
           ))}
         </div>
       )}
+      <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid var(--border)' }}>
+        <div style={{ display: 'flex', gap: 6, alignItems: 'center', fontSize: 12 }}>
+          <span style={{ color: 'var(--text-secondary)' }}>Robustness backtest (FINSABER, ~7mo):</span>
+          <select value={rollStrat} onChange={(e) => setRollStrat(e.target.value)}
+            style={{ padding: '4px 6px', borderRadius: 6, background: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: '1px solid var(--border)' }}>
+            <option value="tech_baseline">tech_baseline</option>
+            <option value="mean_reversion">mean_reversion</option>
+            <option value="momentum">momentum</option>
+          </select>
+          <button onClick={runRoll} disabled={rollBusy}
+            style={{ padding: '4px 10px', borderRadius: 6, fontSize: 11, background: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: '1px solid var(--border)', cursor: rollBusy ? 'wait' : 'pointer' }}>
+            {rollBusy ? 'running…' : 'run'}
+          </button>
+        </div>
+        {roll && !roll.error && (
+          <div style={{ marginTop: 6, fontSize: 12 }}>
+            <div style={{ fontWeight: 600, color: (roll.excess_vs_buyhold?.mean ?? 0) > 0 ? '#16a34a' : 'var(--text-primary)' }}>{roll.verdict}</div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginTop: 4, color: 'var(--text-secondary)' }}>
+              <span>windows: <strong>{roll.beats_buy_hold_windows ?? '—'}</strong></span>
+              <span>binomial p: <strong>{typeof roll.binomial_p_vs_coinflip === 'number' ? roll.binomial_p_vs_coinflip.toFixed(2) : '—'}</strong></span>
+              <span>flip rate: <strong>{typeof roll.action_stability?.mean_flip_rate === 'number' ? roll.action_stability.mean_flip_rate.toFixed(2) : '—'}</strong></span>
+            </div>
+          </div>
+        )}
+        {roll?.error && <div style={{ marginTop: 6, color: 'var(--danger,#dc2626)', fontSize: 12 }}>{roll.error}</div>}
+      </div>
       {err && <div style={{ color: 'var(--danger,#dc2626)', fontSize: 12 }}>{err}</div>}
       {loading && <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>scoring…</div>}
       {score && !loading && (
