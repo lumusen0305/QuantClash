@@ -37,6 +37,26 @@ async def eval_baseline(req: BaselineRequest):
     )
 
 
+class FactorCohortRequest(BaseModel):
+    tickers: Optional[List[str]] = None  # defaults to universe
+    as_of_date: Optional[str] = None
+    label: str = "factor_cohort"
+    top_n: int = 5
+
+
+@router.post("/factor-cohort")
+async def eval_factor_cohort(req: FactorCohortRequest):
+    """Record the factor screener's top-N picks as a forward-test cohort."""
+    from app.eval.baselines import run_factor_cohort
+    from app.api.discovery import WATCHLIST
+    as_of = req.as_of_date or date.today().isoformat()
+    universe = req.tickers or WATCHLIST
+    loop = asyncio.get_event_loop()
+    return await loop.run_in_executor(
+        None, lambda: run_factor_cohort(universe, as_of, req.label, req.top_n)
+    )
+
+
 class AgentRunRequest(BaseModel):
     tickers: List[str]
     label: str = "agent"

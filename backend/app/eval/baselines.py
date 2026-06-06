@@ -83,6 +83,25 @@ def mean_reversion_baseline(ticker: str, as_of_date: str) -> dict | None:
 _STRATEGIES = {"tech_baseline": tech_baseline, "mean_reversion": mean_reversion_baseline}
 
 
+def run_factor_cohort(tickers: list, as_of_date: str, label: str = "factor_cohort",
+                      top_n: int = 5) -> dict:
+    """Record the multi-factor screener's top-N picks as a BUY cohort for
+    forward-testing — validates whether the composite factor actually works.
+    Cross-sectional (ranks the universe), so it's recorded as one cohort.
+    NOTE: fundamental factors use current data, so only forward-test (today→
+    future), not historical as-of, is leakage-free."""
+    from app.data.factors import screen as factor_screen
+    from app.eval.harness import record_decision
+    ranked = factor_screen([t.upper() for t in tickers if t][:60])
+    picks = ranked[:top_n]
+    for p in picks:
+        # composite (0-1) as confidence; price as ref
+        record_decision(label, p["ticker"], as_of_date, "BUY",
+                        round(float(p["composite"]), 2), p.get("price"))
+    return {"label": label, "as_of_date": as_of_date, "recorded": len(picks),
+            "picks": [{"ticker": p["ticker"], "composite": p["composite"]} for p in picks]}
+
+
 def run_baseline_eval(tickers: list, as_of_date: str, label: str = "tech_baseline",
                       strategy: str = "tech_baseline") -> dict:
     """Generate + record baseline decisions as-of a date under `label`.
