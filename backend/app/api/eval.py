@@ -122,8 +122,14 @@ async def eval_agent_run(req: AgentRunRequest):
         )
         recorded.append({"ticker": ticker, "action": action,
                          "confidence": fd.get("confidence")})
-    return {"label": req.label, "as_of_date": as_of, "recorded": len(recorded),
-            "decisions": recorded}
+    out = {"label": req.label, "as_of_date": as_of, "recorded": len(recorded),
+           "decisions": recorded}
+    if harness.predates_llm_cutoff(as_of):
+        out["contamination_warning"] = (
+            f"as_of {as_of} predates the LLM training cutoff — this LLM cohort "
+            f"risks data leakage / look-ahead; prefer forward-testing (today→future)."
+        )
+    return out
 
 
 @router.get("/score")

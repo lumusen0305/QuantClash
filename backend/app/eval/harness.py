@@ -30,6 +30,14 @@ import yfinance as yf
 
 _DB = os.path.expanduser("~/.stockapp/eval.db")
 
+# Contamination-control cutoff (Reliable-Eval, arXiv 2603.27539 §3.1 standard #1):
+# if a backtest window starts BEFORE an LLM's training cutoff, an LLM-based cohort
+# scored over it risks data leakage / look-ahead (the model may have memorized the
+# outcome). Deterministic baselines are immune (price-only as-of), so this is a
+# soft, informational flag — the caller interprets it per cohort kind. Override via
+# env so it tracks the model actually in use.
+_LLM_TRAINING_CUTOFF = os.environ.get("LLM_TRAINING_CUTOFF", "2025-12-01")
+
 
 def _init_db():
     Path(_DB).parent.mkdir(parents=True, exist_ok=True)
@@ -127,16 +135,29 @@ def _cost_bps_for(ticker: str) -> float:
     return bps
 
 
+def predates_llm_cutoff(from_date: str, cutoff: str = _LLM_TRAINING_CUTOFF) -> bool:
+    """True if a window starting `from_date` predates the LLM training cutoff —
+    i.e. scoring an LLM-based cohort over it risks data leakage (Reliable-Eval
+    standard #1). Pure date comparison; deterministic baselines can ignore it."""
+    try:
+        return str(from_date)[:10] < str(cutoff)[:10]
+    except Exception:
+        return False
+
+
 def _regime(from_date: str, benchmark: str = "SPY") -> dict:
     """Classify the market regime over [from_date, today] via a benchmark, so
     results are read in context (addresses regime-shift blindness, arXiv
     2603.27539 §4.5). A +8% bull window makes 'always buy' look good — this
     surfaces that instead of hiding it."""
+    leak = predates_llm_cutoff(from_date)  # look-ahead risk for LLM cohorts
     fr = forward_return(benchmark, from_date)
     if fr is None:
-        return {"benchmark": benchmark, "benchmark_return": None, "regime": "unknown"}
+        return {"benchmark": benchmark, "benchmark_return": None, "regime": "unknown",
+                "predates_llm_cutoff": leak}
     regime = "bull" if fr > 0.05 else "bear" if fr < -0.05 else "sideways"
-    return {"benchmark": benchmark, "benchmark_return": round(fr, 4), "regime": regime}
+    return {"benchmark": benchmark, "benchmark_return": round(fr, 4), "regime": regime,
+            "predates_llm_cutoff": leak}
 
 
 def score(label: str, cost_bps: float | None = None) -> dict:

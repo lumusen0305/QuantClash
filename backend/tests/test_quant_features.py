@@ -139,11 +139,21 @@ def test_cvar():
     check("cvar negative", cv is not None and cv < 0)
 
 
+def test_contamination_flag():
+    # Reliable-Eval #1: windows before the LLM training cutoff are leakage risk for
+    # LLM cohorts; deterministic baselines are immune (caller interprets the flag).
+    from app.eval.harness import predates_llm_cutoff as P
+    check("pre-cutoff flagged", P("2024-01-01", cutoff="2025-12-01") is True)
+    check("post-cutoff clean", P("2026-06-01", cutoff="2025-12-01") is False)
+    check("boundary is exclusive", P("2025-12-01", cutoff="2025-12-01") is False)
+    check("bad date safe", P("not-a-date", cutoff="2025-12-01") is False)
+
+
 def main():
     for fn in [test_selective_consensus, test_portfolio_builder, test_news_sentiment,
                test_score_decision_alpha, test_reflect_critique, test_style_levels,
                test_verifier_gate, test_correlation_dampening, test_apply_cap, test_cvar,
-               test_no_oversuppression]:
+               test_no_oversuppression, test_contamination_flag]:
         try:
             fn()
         except Exception as e:
