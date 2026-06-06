@@ -80,7 +80,30 @@ def mean_reversion_baseline(ticker: str, as_of_date: str) -> dict | None:
             "ref_price": round(price, 2), "rsi": round(rsi, 1)}
 
 
-_STRATEGIES = {"tech_baseline": tech_baseline, "mean_reversion": mean_reversion_baseline}
+def momentum_baseline(ticker: str, as_of_date: str) -> dict | None:
+    """Pure 6-1 momentum as-of a date: BUY strong positive momentum, SELL strong
+    negative, else HOLD. Price-only → leakage-free historically (academic 6-1
+    construction skips the most recent month; arXiv 2009.04824)."""
+    hist = _hist_asof(ticker, as_of_date)
+    if hist is None:
+        return None
+    close = hist["Close"]
+    price = float(close.iloc[-1])
+    if len(close) <= 22:
+        return None
+    mom = (float(close.iloc[-22]) - float(close.iloc[0])) / float(close.iloc[0])
+    if mom > 0.10:
+        action, conf = "BUY", round(min(0.9, 0.5 + mom), 2)
+    elif mom < -0.10:
+        action, conf = "SELL", round(min(0.9, 0.5 + abs(mom)), 2)
+    else:
+        action, conf = "HOLD", 0.4
+    return {"ticker": ticker.upper(), "action": action, "confidence": conf,
+            "ref_price": round(price, 2), "mom_6_1": round(mom, 3)}
+
+
+_STRATEGIES = {"tech_baseline": tech_baseline, "mean_reversion": mean_reversion_baseline,
+               "momentum": momentum_baseline}
 
 
 def run_factor_cohort(tickers: list, as_of_date: str, label: str = "factor_cohort",
