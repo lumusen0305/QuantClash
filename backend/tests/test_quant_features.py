@@ -392,6 +392,29 @@ def test_cohort_meta():
             os.remove(tmp)
 
 
+def test_high_proximity_baseline():
+    # 52-week-high momentum (George & Hwang). Monkeypatch _hist_asof -> synthetic.
+    import pandas as pd
+    from app.eval import baselines as B
+    orig = B._hist_asof
+    try:
+        B._hist_asof = lambda t, d: pd.DataFrame({"Close": [60, 70, 80, 90, 100, 98]})  # at high
+        near = B.high_proximity_baseline("AAA", "2026-01-01")
+        check("near 52w-high -> BUY", near["action"] == "BUY")
+        check("proximity reported", near["high_proximity"] >= 0.95)
+        B._hist_asof = lambda t, d: pd.DataFrame({"Close": [100, 95, 90, 80, 70, 64]})  # far below high
+        far = B.high_proximity_baseline("AAA", "2026-01-01")
+        check("far below high -> SELL", far["action"] == "SELL")
+        B._hist_asof = lambda t, d: pd.DataFrame({"Close": [100, 95, 90, 88, 86, 85]})  # mid
+        mid = B.high_proximity_baseline("AAA", "2026-01-01")
+        check("mid proximity -> HOLD", mid["action"] == "HOLD")
+        B._hist_asof = lambda t, d: None
+        check("no data -> None", B.high_proximity_baseline("AAA", "2026-01-01") is None)
+        check("registered in _STRATEGIES", "high_proximity" in B._STRATEGIES)
+    finally:
+        B._hist_asof = orig
+
+
 def main():
     for fn in [test_selective_consensus, test_portfolio_builder, test_news_sentiment,
                test_score_decision_alpha, test_reflect_critique, test_style_levels,
@@ -401,7 +424,7 @@ def main():
                test_faithfulness, test_faithfulness_non_mutating, test_brier_score,
                test_tally_wins, test_verdict, test_metric_direction, test_action_stability,
                test_confidence_discrimination, test_max_drawdown, test_is_fallback_failure,
-               test_cohort_meta, test_score_pipeline_synthetic]:
+               test_cohort_meta, test_score_pipeline_synthetic, test_high_proximity_baseline]:
         try:
             fn()
         except Exception as e:

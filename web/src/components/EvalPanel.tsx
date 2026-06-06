@@ -148,6 +148,7 @@ export function EvalPanel() {
             <option value="tech_baseline">tech_baseline</option>
             <option value="mean_reversion">mean_reversion</option>
             <option value="momentum">momentum</option>
+            <option value="high_proximity">high_proximity</option>
           </select>
           <button className={styles.ctl} onClick={runRoll} disabled={rollBusy}
             style={{ padding: '4px 10px', fontSize: 11, cursor: rollBusy ? 'wait' : 'pointer' }}>

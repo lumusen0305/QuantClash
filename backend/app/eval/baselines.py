@@ -102,8 +102,33 @@ def momentum_baseline(ticker: str, as_of_date: str) -> dict | None:
             "ref_price": round(price, 2), "mom_6_1": round(mom, 3)}
 
 
+def high_proximity_baseline(ticker: str, as_of_date: str) -> dict | None:
+    """52-week-high momentum as-of a date (George & Hwang 2004, "The 52-Week High
+    and Momentum Investing"): nearness to the 52-week high predicts continuation.
+    BUY when price is near its trailing high, SELL when far below, else HOLD.
+    Price-only → leakage-free historically. A tougher, well-documented bar than
+    the weak trend/mean-reversion baselines."""
+    hist = _hist_asof(ticker, as_of_date)
+    if hist is None:
+        return None
+    close = hist["Close"]
+    price = float(close.iloc[-1])
+    high = float(close.max())  # ~52-week high (1y history, as-of cut)
+    if high <= 0:
+        return None
+    prox = price / high  # 1.0 = at the high, lower = further below
+    if prox >= 0.95:
+        action, conf = "BUY", round(min(0.9, 0.5 + (prox - 0.95) * 8), 2)
+    elif prox <= 0.70:
+        action, conf = "SELL", round(min(0.9, 0.5 + (0.70 - prox)), 2)
+    else:
+        action, conf = "HOLD", 0.4
+    return {"ticker": ticker.upper(), "action": action, "confidence": conf,
+            "ref_price": round(price, 2), "high_proximity": round(prox, 3)}
+
+
 _STRATEGIES = {"tech_baseline": tech_baseline, "mean_reversion": mean_reversion_baseline,
-               "momentum": momentum_baseline}
+               "momentum": momentum_baseline, "high_proximity": high_proximity_baseline}
 
 
 def rolling_backtest(tickers: list, start_date: str, end_date: str,
