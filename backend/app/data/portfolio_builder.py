@@ -123,11 +123,28 @@ def build_portfolio(decisions: list, risk_style: str = "balanced",
         for t, w in sorted(weights.items(), key=lambda kv: kv[1], reverse=True)
     ]
     cash = round(max(0.0, 1.0 - sum(weights.values())), 4)
+    # Risk transparency: effective # of positions (inverse Herfindahl on the
+    # invested book → concentration) and a rough invested-vol estimate.
+    inv = sum(weights.values())
+    eff_positions = None
+    if inv > 0:
+        shares = [w / inv for w in weights.values()]
+        hhi = sum(s * s for s in shares)
+        eff_positions = round(1.0 / hhi, 2) if hhi > 0 else None
+    vol_by = {d["ticker"]: d.get("volatility") for d in buys}
+    est_vol = None
+    contribs = [weights[t] * vol_by[t] for t in weights
+                if isinstance(vol_by.get(t), (int, float))]
+    if contribs:
+        est_vol = round(sum(contribs), 4)  # weighted daily vol (corr-agnostic upper bound)
     return {
         "positions": positions,
         "cash": cash,
         "cash_pct": round(cash * 100, 1),
         "risk_style": risk_style,
         "weighting": weighting,
-        "note": f"{len(positions)} positions, {weighting}-weighted, {risk_style} profile.",
+        "effective_positions": eff_positions,
+        "est_daily_vol": est_vol,
+        "note": f"{len(positions)} positions, {weighting}-weighted, {risk_style} profile."
+                + (f" ~{eff_positions} effective (concentration)." if eff_positions else ""),
     }
