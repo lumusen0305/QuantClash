@@ -245,13 +245,25 @@ def test_brier_score():
     check("confident-correct lower brier", good < bad)
 
 
+def test_tally_wins():
+    from app.eval.harness import _tally_wins as T
+    better = {"m1": "A", "m2": "A", "m3": "B", "m4": "tie", "m5": None}
+    wa, wb, overall = T(better, "A", "B")
+    check("counts A wins", wa == 2)
+    check("counts B wins", wb == 1)
+    check("ignores tie/None", overall == "A")
+    wa2, wb2, ov2 = T({"m1": "A", "m2": "B"}, "A", "B")
+    check("even -> tie", ov2 == "tie")
+
+
 def main():
     for fn in [test_selective_consensus, test_portfolio_builder, test_news_sentiment,
                test_score_decision_alpha, test_reflect_critique, test_style_levels,
                test_verifier_gate, test_correlation_dampening, test_apply_cap, test_cvar,
                test_no_oversuppression, test_contamination_flag, test_binomial_sf,
                test_t_stat, test_two_sided_p_and_bonferroni, test_forward_return_horizon,
-               test_faithfulness, test_faithfulness_non_mutating, test_brier_score]:
+               test_faithfulness, test_faithfulness_non_mutating, test_brier_score,
+               test_tally_wins]:
         try:
             fn()
         except Exception as e:

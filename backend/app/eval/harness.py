@@ -310,16 +310,34 @@ def compare(label_a: str, label_b: str) -> dict:
             return "tie"
         return (label_a if (va > vb) == higher else label_b)
 
+    better = {
+        "hit_rate": _better("hit_rate", higher=True),
+        "strategy_return": _better("strategy_return", higher=True),
+        "excess_vs_buyhold": _better("excess_vs_buyhold", higher=True),
+        "avg_fwd_return_buys": _better("avg_fwd_return_buys", higher=True),
+        "sortino": _better("sortino", higher=True),
+        "return_over_risk": _better("return_over_risk", higher=True),
+        "profit_factor": _better("profit_factor", higher=True),
+        "calibration_gap": _better("calibration_gap", higher=False),   # lower is better
+        "brier_score": _better("brier_score", higher=False),           # lower is better
+    }
+    # Tally decisive wins so the A/B has a headline, not just a per-metric grid.
+    wins_a, wins_b, overall = _tally_wins(better, label_a, label_b)
     return {
         "a": a, "b": b,
-        "better": {
-            "hit_rate": _better("hit_rate", higher=True),
-            "strategy_return": _better("strategy_return", higher=True),
-            "excess_vs_buyhold": _better("excess_vs_buyhold", higher=True),
-            "avg_fwd_return_buys": _better("avg_fwd_return_buys", higher=True),
-            "calibration_gap": _better("calibration_gap", higher=False),  # lower is better
-        },
+        "better": better,
+        "wins": {label_a: wins_a, label_b: wins_b},
+        "overall": overall,
     }
+
+
+def _tally_wins(better: dict, label_a: str, label_b: str):
+    """Count per-metric wins for each label (ignoring ties/None) and pick the
+    overall winner. Pure — separated from compare() so it's testable offline."""
+    wins_a = sum(1 for v in better.values() if v == label_a)
+    wins_b = sum(1 for v in better.values() if v == label_b)
+    overall = (label_a if wins_a > wins_b else label_b if wins_b > wins_a else "tie")
+    return wins_a, wins_b, overall
 
 
 def _brier_score(pairs: list) -> float | None:
