@@ -555,6 +555,15 @@ export const fetchEvalLabels = () =>
 export const fetchEvalScore = (label: string) =>
   api.get<EvalScore>('/eval/score', { params: { label } }).then((r) => r.data);
 
+export interface LeaderRow {
+  rank: number; label: string; directional?: number; hit_rate?: number | null;
+  strategy_return?: number | null; excess_vs_buyhold?: number | null;
+  beats_buy_hold?: boolean | null; sortino?: number | null; regime?: string | null;
+}
+export const fetchEvalLeaderboard = (metric = 'excess_vs_buyhold') =>
+  api.get<{ metric: string; ranked: LeaderRow[]; pending: { label: string }[] }>(
+    '/eval/leaderboard', { params: { metric } }).then((r) => r.data);
+
 export const fetchEvalCompare = (a: string, b: string) =>
   api.get<{ a: EvalScore; b: EvalScore; better: Record<string, string | null> }>(
     '/eval/compare', { params: { a, b } }).then((r) => r.data);

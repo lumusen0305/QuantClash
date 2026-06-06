@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { fetchEvalLabels, fetchEvalScore, fetchEvalCompare, type EvalScore } from '../api/client';
+import { fetchEvalLabels, fetchEvalScore, fetchEvalCompare, fetchEvalLeaderboard, type EvalScore, type LeaderRow } from '../api/client';
 
 // Compact strategy-evaluation panel: pick a recorded config label and see how
 // its decisions performed on realized forward returns (net-of-cost, vs buy-hold,
@@ -16,6 +16,8 @@ export function EvalPanel() {
   const [err, setErr] = useState<string | null>(null);
   const [selB, setSelB] = useState<string>('');
   const [cmp, setCmp] = useState<Record<string, string | null> | null>(null);
+  const [board, setBoard] = useState<LeaderRow[] | null>(null);
+  const [showBoard, setShowBoard] = useState(false);
 
   useEffect(() => {
     fetchEvalLabels().then((l) => {
@@ -48,7 +50,12 @@ export function EvalPanel() {
   return (
     <div style={{ border: '1px solid var(--border)', borderRadius: 10, padding: 14, marginTop: 12 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-        <strong style={{ fontSize: 14 }}>Strategy Eval (forward-return backtest)</strong>
+        <strong style={{ fontSize: 14 }}>Strategy Eval (forward-return backtest)
+          <button onClick={async () => { setShowBoard(v => !v); if (!board) { try { setBoard((await fetchEvalLeaderboard()).ranked); } catch { /* */ } } }}
+            style={{ marginLeft: 10, padding: '3px 8px', borderRadius: 6, fontSize: 11, background: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: '1px solid var(--border)', cursor: 'pointer' }}>
+            🏆 {showBoard ? 'hide' : 'leaderboard'}
+          </button>
+        </strong>
         <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
           <select value={sel} onChange={(e) => setSel(e.target.value)}
             style={{ padding: '5px 8px', borderRadius: 6, background: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: '1px solid var(--border)' }}>
@@ -71,6 +78,21 @@ export function EvalPanel() {
               <span key={k}><span style={{ color: 'var(--text-secondary)' }}>{k}:</span> <strong>{v ?? '—'}</strong></span>
             ))}
           </div>
+        </div>
+      )}
+      {showBoard && board && (
+        <div style={{ marginBottom: 8, fontSize: 12 }}>
+          <div style={{ color: 'var(--text-secondary)', marginBottom: 4 }}>All cohorts ranked by excess vs buy-and-hold:</div>
+          {board.map((r) => (
+            <div key={r.label} style={{ display: 'flex', gap: 8, padding: '2px 0' }}>
+              <span style={{ width: 24 }}>#{r.rank}</span>
+              <span style={{ flex: 1 }}>{r.label}</span>
+              <span style={{ width: 70, textAlign: 'right', color: (r.excess_vs_buyhold ?? 0) >= 0 ? '#16a34a' : '#dc2626' }}>
+                {typeof r.excess_vs_buyhold === 'number' ? `${(r.excess_vs_buyhold * 100).toFixed(1)}%` : '—'}
+              </span>
+              <span style={{ width: 44, textAlign: 'right' }}>{r.beats_buy_hold ? '✓BH' : '✗'}</span>
+            </div>
+          ))}
         </div>
       )}
       {err && <div style={{ color: 'var(--danger,#dc2626)', fontSize: 12 }}>{err}</div>}
