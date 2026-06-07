@@ -180,6 +180,15 @@ def rolling_backtest(tickers: list, start_date: str, end_date: str,
     agg["step_days"] = step_days
     agg["non_overlapping"] = non_overlapping
     agg["action_stability"] = action_stability_across(labels)  # AlphaForgeBench flip-rate
+    agg["universe_size"] = len([t for t in tickers if t])
+    # Honest disclosure: the SAME universe is scored across every window, so
+    # results are survivorship-biased toward names that exist/thrived today
+    # (FINSABER arXiv 2505.07078 fights this with point-in-time constituents,
+    # which need historical index membership data we don't have here).
+    agg["survivorship_warning"] = (
+        "fixed universe across all windows — results are survivorship-biased; "
+        "a point-in-time (historical-constituent) universe would be stricter."
+    )
     return agg
 
 
