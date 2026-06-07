@@ -596,6 +596,8 @@ export interface RollingBacktest {
   verdict?: string;
   excess_vs_buyhold?: { mean?: number | null; std?: number | null };
   action_stability?: { mean_flip_rate?: number | null; tickers?: number };
+  universe_size?: number;
+  survivorship_warning?: string;
   note?: string;
   error?: string;
 }

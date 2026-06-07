@@ -165,6 +165,9 @@ export function EvalPanel() {
               <span>{t('eval.flipRate')}: <strong>{typeof roll.action_stability?.mean_flip_rate === 'number' ? roll.action_stability.mean_flip_rate.toFixed(2) : '—'}</strong></span>
               <span>{t('eval.maxDD')}: <strong>{typeof roll.max_drawdown === 'number' ? `${(roll.max_drawdown * 100).toFixed(1)}%` : '—'}</strong></span>
             </div>
+            {roll.survivorship_warning && (
+              <div style={{ marginTop: 4, color: 'var(--text-muted)', fontSize: 10 }}>⚠ {roll.survivorship_warning}</div>
+            )}
           </div>
         )}
         {roll?.error && <div style={{ marginTop: 6, color: 'var(--red)', fontSize: 12 }}>{roll.error}</div>}
