@@ -1198,7 +1198,7 @@ function HistoryEntryTranscript({
       {hasBullBear && (
         <div className={styles.debateDivider}>
           <span className={styles.debateDividerLine} />
-          <span className={styles.debateDividerLabel}>Bull vs Bear</span>
+          <span className={styles.debateDividerLabel}>{t('result.bullVsBear')}</span>
           <span className={styles.debateDividerLine} />
         </div>
       )}
@@ -1228,7 +1228,7 @@ function HistoryEntryTranscript({
         <>
           <div className={styles.debateDivider}>
             <span className={styles.debateDividerLine} />
-            <span className={styles.debateDividerLabel}>Risk Debate</span>
+            <span className={styles.debateDividerLabel}>{t('result.riskDebate')}</span>
             <span className={styles.debateDividerLine} />
           </div>
           <DiscussionMessage resultKey="risk_debate" value={entry.result['risk_debate']} t={t} />

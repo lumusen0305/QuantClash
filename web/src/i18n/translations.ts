@@ -149,6 +149,7 @@ export const translations: Record<Locale, Record<string, string>> = {
 
     // Backtest
     'backtest.title': 'Rule Backtest',
+    'backtest.winRate': 'Win Rate',
     'backtest.ticker': 'Ticker',
     'backtest.start': 'Start',
     'backtest.end': 'End',
@@ -275,6 +276,8 @@ export const translations: Record<Locale, Record<string, string>> = {
     'result.riskVerdict': 'Risk Verdict',
     'result.finalDecision': 'Final Decision',
     'result.consensus': 'Analyst Consensus',
+    'result.bullVsBear': 'Bull vs Bear',
+    'result.chartUnavailable': 'Chart unavailable',
     'result.bullish': 'Bullish',
     'result.bearish': 'Bearish',
     'result.neutral': 'Neutral',
@@ -780,6 +783,7 @@ export const translations: Record<Locale, Record<string, string>> = {
 
     // Backtest
     'backtest.title': '規則回測',
+    'backtest.winRate': '勝率',
     'backtest.ticker': '股票代碼',
     'backtest.start': '開始日期',
     'backtest.end': '結束日期',
@@ -906,6 +910,8 @@ export const translations: Record<Locale, Record<string, string>> = {
     'result.riskVerdict': '風險結論',
     'result.finalDecision': '最終決策',
     'result.consensus': '分析師共識',
+    'result.bullVsBear': '多空辯論',
+    'result.chartUnavailable': '圖表無法顯示',
     'result.bullish': '看多',
     'result.bearish': '看空',
     'result.neutral': '中性',

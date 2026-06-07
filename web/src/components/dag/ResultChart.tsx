@@ -11,6 +11,7 @@ import {
 } from 'lightweight-charts';
 import { api } from '../../api/client';
 import { useTheme } from '../../theme/context';
+import { useI18n } from '../../i18n/context';
 import type { OHLCVRecord } from '../../api/client';
 import styles from './ResultChart.module.css';
 
@@ -38,6 +39,7 @@ function computeSMA(closes: number[], period: number): (number | null)[] {
 }
 
 export function ResultChart({ ticker, finalDecision }: ResultChartProps) {
+  const { t } = useI18n();
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const candleRef = useRef<ISeriesApi<'Candlestick'> | null>(null);
@@ -290,7 +292,7 @@ export function ResultChart({ ticker, finalDecision }: ResultChartProps) {
       )}
       {error && !loading && (
         <div className={styles.overlay}>
-          <span className={styles.errorText}>Chart unavailable</span>
+          <span className={styles.errorText}>{t('result.chartUnavailable')}</span>
         </div>
       )}
     </div>

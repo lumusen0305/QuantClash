@@ -8,6 +8,7 @@ import {
   type ISeriesApi,
   ColorType,
 } from 'lightweight-charts';
+import { useI18n } from '../../i18n/context';
 import styles from './BacktestChart.module.css';
 
 export interface OHLCVData {
@@ -46,6 +47,7 @@ interface BacktestChartProps {
 }
 
 export function BacktestChart({ ohlcv, result, onMarkerClick }: BacktestChartProps) {
+  const { t } = useI18n();
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const candleSeriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null);
@@ -159,7 +161,7 @@ export function BacktestChart({ ohlcv, result, onMarkerClick }: BacktestChartPro
             </span>
           </div>
           <div className={styles.stat}>
-            <span className={styles.statLabel}>Win Rate</span>
+            <span className={styles.statLabel}>{t('backtest.winRate')}</span>
             <span className={styles.statValue}>{(result.win_rate * 100).toFixed(1)}%</span>
           </div>
           <div className={styles.stat}>
