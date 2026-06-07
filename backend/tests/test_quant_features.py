@@ -415,6 +415,35 @@ def test_high_proximity_baseline():
         B._hist_asof = orig
 
 
+def test_hist_asof_old_date_regression():
+    # Regression for the silent >1y backtest bug: _hist_asof must return data for
+    # as-of dates more than a year ago (it fetched period="1y" from today before).
+    # Mocks yfinance so it's dependency-free.
+    import pandas as pd, datetime as _dt
+    from app.eval import baselines as B
+
+    class _FakeTicker:
+        def __init__(self, t): pass
+        def history(self, start=None, end=None, period=None):
+            sd = _dt.date.fromisoformat(start)
+            ed = _dt.date.fromisoformat(end)
+            days = (ed - sd).days
+            idx = pd.to_datetime([sd + _dt.timedelta(days=i) for i in range(days)])
+            return pd.DataFrame({"Close": [100.0 + i for i in range(days)]}, index=idx)
+
+    class _FakeYf:
+        Ticker = _FakeTicker
+
+    orig = B.yf
+    B.yf = _FakeYf
+    try:
+        h = B._hist_asof("X", "2024-07-01")  # >1 year before "today"
+        check("old-date hist not None (regression)", h is not None and len(h) >= 30)
+        check("as-of cut excludes future", h is not None and all(d <= "2024-07-01" for d in h.index))
+    finally:
+        B.yf = orig
+
+
 def main():
     for fn in [test_selective_consensus, test_portfolio_builder, test_news_sentiment,
                test_score_decision_alpha, test_reflect_critique, test_style_levels,
@@ -424,7 +453,8 @@ def main():
                test_faithfulness, test_faithfulness_non_mutating, test_brier_score,
                test_tally_wins, test_verdict, test_metric_direction, test_action_stability,
                test_confidence_discrimination, test_max_drawdown, test_is_fallback_failure,
-               test_cohort_meta, test_score_pipeline_synthetic, test_high_proximity_baseline]:
+               test_cohort_meta, test_score_pipeline_synthetic, test_high_proximity_baseline,
+               test_hist_asof_old_date_regression]:
         try:
             fn()
         except Exception as e:
