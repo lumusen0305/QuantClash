@@ -26,6 +26,7 @@ export function EvalPanel() {
   const [roll, setRoll] = useState<RollingBacktest | null>(null);
   const [rollStrat, setRollStrat] = useState('tech_baseline');
   const [rollBusy, setRollBusy] = useState(false);
+  const [showDecisions, setShowDecisions] = useState(false);
 
   useEffect(() => {
     fetchEvalLabels().then((l) => {
@@ -176,20 +177,43 @@ export function EvalPanel() {
             {score.holds}/{score.n} {t('eval.hold')} — {score.note}
           </div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(130px,1fr))', gap: 8, fontSize: 12, fontVariantNumeric: 'tabular-nums' }}>
-            <Stat label={t('eval.hitRate')} v={pct(score.hit_rate)} />
-            <Stat label={t('eval.netReturn')} v={pct(score.strategy_return)} pos={(score.strategy_return ?? 0) >= 0} />
-            <Stat label={t('eval.buyHold')} v={pct(score.buy_hold_return)} />
-            <Stat label={t('eval.excess')} v={pct(score.excess_vs_buyhold)} pos={(score.excess_vs_buyhold ?? 0) >= 0} />
-            <Stat label={t('eval.beats')} v={beat == null ? '—' : beat ? t('eval.yes') : t('eval.no')} pos={!!beat} />
-            <Stat label={t('eval.calibGap')} v={pct(score.calibration_gap)} />
-            <Stat label={t('eval.brier')} v={typeof score.brier_score === 'number' ? score.brier_score.toFixed(3) : '—'} pos={typeof score.brier_score === 'number' ? score.brier_score < 0.25 : undefined} />
-            <Stat label={t('eval.discrim')} v={typeof score.confidence_discrimination?.discrimination === 'number' ? score.confidence_discrimination.discrimination.toFixed(2) : '—'} pos={typeof score.confidence_discrimination?.discrimination === 'number' ? score.confidence_discrimination.discrimination > 0 : undefined} />
-            <Stat label={t('eval.returnRisk')} v={typeof score.return_over_risk === 'number' ? score.return_over_risk.toFixed(2) : '—'} />
-            <Stat label={t('eval.sortino')} v={typeof score.sortino === 'number' ? score.sortino.toFixed(2) : '—'} pos={typeof score.sortino === 'number' ? score.sortino >= 0 : undefined} />
-            <Stat label={t('eval.regime')} v={score.window?.regime ?? '—'} />
-            {(score.unscored ?? 0) > 0 && <Stat label={t('eval.unscored')} v={String(score.unscored)} pos={false} />}
-          </div>
+          <>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(130px,1fr))', gap: 8, fontSize: 12, fontVariantNumeric: 'tabular-nums' }}>
+              <Stat label={t('eval.hitRate')} v={pct(score.hit_rate)} />
+              <Stat label={t('eval.netReturn')} v={pct(score.strategy_return)} pos={(score.strategy_return ?? 0) >= 0} />
+              <Stat label={t('eval.buyHold')} v={pct(score.buy_hold_return)} />
+              <Stat label={t('eval.excess')} v={pct(score.excess_vs_buyhold)} pos={(score.excess_vs_buyhold ?? 0) >= 0} />
+              <Stat label={t('eval.beats')} v={beat == null ? '—' : beat ? t('eval.yes') : t('eval.no')} pos={!!beat} />
+              <Stat label={t('eval.calibGap')} v={pct(score.calibration_gap)} />
+              <Stat label={t('eval.brier')} v={typeof score.brier_score === 'number' ? score.brier_score.toFixed(3) : '—'} pos={typeof score.brier_score === 'number' ? score.brier_score < 0.25 : undefined} />
+              <Stat label={t('eval.discrim')} v={typeof score.confidence_discrimination?.discrimination === 'number' ? score.confidence_discrimination.discrimination.toFixed(2) : '—'} pos={typeof score.confidence_discrimination?.discrimination === 'number' ? score.confidence_discrimination.discrimination > 0 : undefined} />
+              <Stat label={t('eval.returnRisk')} v={typeof score.return_over_risk === 'number' ? score.return_over_risk.toFixed(2) : '—'} />
+              <Stat label={t('eval.sortino')} v={typeof score.sortino === 'number' ? score.sortino.toFixed(2) : '—'} pos={typeof score.sortino === 'number' ? score.sortino >= 0 : undefined} />
+              <Stat label={t('eval.regime')} v={score.window?.regime ?? '—'} />
+              {(score.unscored ?? 0) > 0 && <Stat label={t('eval.unscored')} v={String(score.unscored)} pos={false} />}
+            </div>
+            {score.decisions && score.decisions.length > 0 && (
+              <div style={{ marginTop: 8 }}>
+                <button className={styles.ctl} onClick={() => setShowDecisions(v => !v)}
+                  style={{ padding: '3px 8px', fontSize: 11, cursor: 'pointer' }}>
+                  {showDecisions ? '▾' : '▸'} {t('eval.decisions')} ({score.decisions.length})
+                </button>
+                {showDecisions && (
+                  <div style={{ marginTop: 6, fontSize: 11, fontVariantNumeric: 'tabular-nums' }}>
+                    {score.decisions.map((d, i) => (
+                      <div key={`${d.ticker}-${d.as_of}-${i}`} style={{ display: 'flex', gap: 8, padding: '2px 0', borderBottom: '1px solid var(--border)' }}>
+                        <span style={{ width: 56, fontWeight: 600 }}>{d.ticker}</span>
+                        <span style={{ width: 44, color: 'var(--text-secondary)' }}>{d.action}</span>
+                        <span style={{ flex: 1, color: 'var(--text-secondary)' }}>{d.as_of}</span>
+                        <span style={{ width: 64, textAlign: 'right', color: (d.fwd_return ?? 0) >= 0 ? 'var(--green)' : 'var(--red)' }}>{pct(d.fwd_return)}</span>
+                        <span style={{ width: 20, textAlign: 'right' }}>{d.action === 'HOLD' ? '·' : d.correct ? '✓' : '✗'}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </>
         )
       )}
     </div>

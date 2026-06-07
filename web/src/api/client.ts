@@ -535,6 +535,10 @@ export interface EvalScore {
   cost_model?: string;
   window?: { regime?: string; benchmark_return?: number | null };
   note?: string | null;
+  decisions?: {
+    ticker: string; as_of: string; action: string; confidence?: number | null;
+    fwd_return?: number | null; correct?: boolean; net_return?: number | null;
+  }[];
 }
 
 export interface SectorRow {
