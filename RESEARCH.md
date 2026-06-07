@@ -115,13 +115,26 @@ windows, 5 mega-caps, 30d step). All three deterministic baselines, head-to-head
 | mean_reversion | NO edge | −9.7% | 1/5 | **−30.8%** | 0.00 | 0.97 |
 | momentum | possible weak edge | +0.9% | 3/4 | −0.9% | 0.00 | 0.31 |
 
-Findings: (1) `max_drawdown` clearly discriminates risk that return alone hides —
-mean_reversion's −30.8% DD vs momentum's −0.9%. (2) momentum *looks* like it beats
-buy-hold, but the harness **correctly flags it not significant** (p=0.31, only 4
-windows) — so it is NOT promoted to default (no-negative-optimization: an
-unverified edge is not an edge). Buy-and-hold remains the bar the LLM agent must
-clear; the agent forward-test (`agent_2026-06-06`) is still accruing (currently
-all-HOLD, so `compare` returns *incomparable* until it makes directional calls).
+**Longer horizon (2023-06 → 2025-05, 20–24 non-overlapping windows)** — far more
+reliable than the 4–5 window run above:
+
+| strategy | verdict | excess/window | windows won | max DD | flip rate |
+|---|---|---|---|---|---|
+| tech_baseline | NO edge | −1.7% | 10/23 | −20.3% | 0.42 |
+| mean_reversion | possible weak edge | +0.6% | 9/20 | −25.3% | 0.41 |
+| momentum | NO edge | −0.5% | 1/24 | −24.3% | 0.02 |
+| high_proximity | NO edge | −3.7% | 5/20 | **−45.1%** | 0.04 |
+
+Findings: (1) **No baseline has a robust/significant edge** over 20–24 windows.
+(2) Short-window verdicts *reversed* at the longer horizon — high_proximity went
+from "least-bad" (−0.1%/win, 6mo) to **worst** (−3.7%, −45% DD); momentum's
+"possible edge" (+0.9%, 3/4) collapsed to −0.5%, 1/24. This is the FINSABER
+lesson demonstrated empirically: short-window results are data-snooping noise.
+(3) `max_drawdown` again discriminates risk return hides. Buy-and-hold remains
+the bar the LLM agent must clear; none of the simple strategies beat it robustly,
+so none is promoted (no-negative-optimization: an unverified edge is not an edge).
+The agent forward-test (`agent_2026-06-06`) is still accruing (all-HOLD so far, so
+`compare` returns *incomparable* until it makes directional calls).
 
 ## Local GPU
 `qwen3:8b` via Ollama (Trading-R1's Qwen3 family) is selectable in the model
