@@ -1,6 +1,7 @@
 import { X } from 'lucide-react';
 import type { NodeInfo } from '../../api/client';
 import type { AgentNodeData } from './AgentNode';
+import { useI18n } from '../../i18n/context';
 import styles from './NodeConfigPanel.module.css';
 
 interface NodeConfigPanelProps {
@@ -13,6 +14,7 @@ interface NodeConfigPanelProps {
 }
 
 export function NodeConfigPanel({ nodeId, data, schema, onUpdate, onClose, onDelete }: NodeConfigPanelProps) {
+  const { t } = useI18n();
   const config = data.config || {};
   const configSchema = schema?.config_schema || {};
 
@@ -24,24 +26,24 @@ export function NodeConfigPanel({ nodeId, data, schema, onUpdate, onClose, onDel
     <aside className={styles.panel}>
       <div className={styles.header}>
         <span className={styles.title}>{data.label}</span>
-        <button className={styles.closeBtn} onClick={onClose}>
+        <button className={styles.closeBtn} aria-label={t('common.close')} onClick={onClose}>
           <X size={16} />
         </button>
       </div>
 
       <div className={styles.section}>
-        <label className={styles.label}>Type</label>
+        <label className={styles.label}>{t('dag.nodeType')}</label>
         <div className={styles.value}>{data.nodeType}</div>
       </div>
 
       <div className={styles.section}>
-        <label className={styles.label}>Description</label>
+        <label className={styles.label}>{t('dag.nodeDesc')}</label>
         <div className={styles.desc}>{data.description}</div>
       </div>
 
       {schema?.input_keys && schema.input_keys.length > 0 && (
         <div className={styles.section}>
-          <label className={styles.label}>Inputs</label>
+          <label className={styles.label}>{t('dag.nodeInputs')}</label>
           <div className={styles.keys}>
             {schema.input_keys.map((k) => (
               <span key={k} className={styles.key}>{k}</span>
@@ -52,7 +54,7 @@ export function NodeConfigPanel({ nodeId, data, schema, onUpdate, onClose, onDel
 
       {schema?.output_keys && schema.output_keys.length > 0 && (
         <div className={styles.section}>
-          <label className={styles.label}>Outputs</label>
+          <label className={styles.label}>{t('dag.nodeOutputs')}</label>
           <div className={styles.keys}>
             {schema.output_keys.map((k) => (
               <span key={k} className={styles.key}>{k}</span>
@@ -71,7 +73,7 @@ export function NodeConfigPanel({ nodeId, data, schema, onUpdate, onClose, onDel
               className={styles.textarea}
               value={(config[key] as string) ?? field.default ?? ''}
               onChange={(e) => handleChange(key, e.target.value)}
-              placeholder={`Custom ${key}...`}
+              placeholder={`${t('dag.custom')} ${key}...`}
               rows={4}
             />
           ) : field.options ? (
@@ -96,7 +98,7 @@ export function NodeConfigPanel({ nodeId, data, schema, onUpdate, onClose, onDel
       <div className={styles.divider} />
 
       <button className={styles.deleteBtn} onClick={() => onDelete(nodeId)}>
-        Delete Node
+        {t('dag.deleteNode')}
       </button>
     </aside>
   );
