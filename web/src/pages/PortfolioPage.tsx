@@ -756,6 +756,7 @@ export function PortfolioPage({ onAnalyze }: PortfolioPageProps = {}) {
                           className={styles.deleteBtn}
                           onClick={() => handleDelete(ep.ticker)}
                           title={t('portfolio.deletePosition')}
+                          aria-label={t('portfolio.deletePosition')}
                         >
                           <X size={12} />
                         </button>
@@ -1191,7 +1192,7 @@ export function PortfolioPage({ onAnalyze }: PortfolioPageProps = {}) {
           <div className={styles.modalPanel} onClick={(e) => e.stopPropagation()}>
             <div className={styles.modalHeader}>
               <span className={styles.modalTitle}>{t('portfolio.adviceTitle')}</span>
-              <button className={styles.modalClose} onClick={() => setAdviceOpen(false)}>
+              <button className={styles.modalClose} aria-label={t('common.close')} onClick={() => setAdviceOpen(false)}>
                 <X size={14} />
               </button>
             </div>

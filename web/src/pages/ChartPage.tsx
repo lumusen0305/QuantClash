@@ -682,7 +682,7 @@ export function ChartPage({ initialTicker, onTickerConsumed, onAnalyze }: ChartP
             onFocus={() => searchResults.length > 0 && setShowDropdown(true)}
           />
           {query && (
-            <button className={styles.searchClear} onClick={() => { setQuery(''); setShowDropdown(false); }}>
+            <button className={styles.searchClear} aria-label={t('common.clear')} onClick={() => { setQuery(''); setShowDropdown(false); }}>
               <X size={12} />
             </button>
           )}
