@@ -7,6 +7,8 @@ import {
   Controls,
   Background,
   BackgroundVariant,
+  useReactFlow,
+  useNodesInitialized,
   type Connection,
   type Node,
   type Edge,
@@ -1448,6 +1450,25 @@ function HistoryTab({
   );
 }
 
+// Auto-fit the canvas once ReactFlow has MEASURED all nodes. Rendered inside
+// <ReactFlow> so it has flow context. The plain `fitView` prop / a programmatic
+// fitView on init both run before node dimensions exist (esp. after a tab switch),
+// leaving the seeded pipeline scrolled off-screen; useNodesInitialized fires at
+// exactly the right moment. Fits once (ref guard) so it never yanks the user's
+// pan/zoom while they edit.
+function FitOnInit() {
+  const initialized = useNodesInitialized();
+  const { fitView } = useReactFlow();
+  const done = useRef(false);
+  useEffect(() => {
+    if (initialized && !done.current) {
+      done.current = true;
+      fitView({ padding: 0.2, duration: 200 });
+    }
+  }, [initialized, fitView]);
+  return null;
+}
+
 // ─── Main DagEditor component ─────────────────────────────────────────────────
 export function DagEditor({ nodeRegistry, onSave, initialTicker, model, onTickerConsumed }: DagEditorProps) {
   const { t, locale } = useI18n();
@@ -2063,6 +2084,7 @@ export function DagEditor({ nodeRegistry, onSave, initialTicker, model, onTicker
             defaultEdgeOptions={{ type: 'flow', animated: false }}
             style={{ background: 'var(--bg-primary)' }}
           >
+            <FitOnInit />
             <Controls
               showInteractive={false}
               style={{
