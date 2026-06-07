@@ -1,3 +1,15 @@
+/* Match the flat-section rhythm of WorkspacePage (margin + bottom-border
+   separator) instead of a boxed card, so the panel doesn't visually clash with
+   the surrounding sections. */
+.panel {
+  margin: 0 28px;
+  padding: 24px 0;
+  border-bottom: 1px solid var(--border);
+}
+@media (max-width: 640px) {
+  .panel { margin: 0 16px; }
+}
+
 /* Shared visual styling for EvalPanel interactive controls (selects + buttons).
    Only the visual surface lives here so each element keeps its own inline sizing;
    this adds a hover affordance the inline styles couldn't express. */

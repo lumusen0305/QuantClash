@@ -75,7 +75,7 @@ export function EvalPanel() {
 
   const beat = score?.beats_buy_hold;
   return (
-    <div style={{ border: '1px solid var(--border)', borderRadius: 10, padding: 14, marginTop: 12 }}>
+    <div className={styles.panel}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
         <strong style={{ fontSize: 14 }}>{t('eval.title')}
           <button className={styles.ctl} onClick={async () => { setShowBoard(v => !v); if (!board) { try { const lb = await fetchEvalLeaderboard(); setBoard(lb.ranked); setBoardBias(lb.selection_bias ?? null); } catch { /* */ } } }}
