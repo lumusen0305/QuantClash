@@ -256,8 +256,8 @@ function SectorBlock({ sRect, onHover, onSelectTicker }: {
   const stockRects = innerH > 10 ? layoutTreemap(items, 0, 0, bw, innerH) : [];
   return (
     <g>
-      <rect x={bx} y={by} width={bw} height={bh} rx={3}
-        fill="rgba(30, 34, 45, 0.6)" stroke="rgba(54, 58, 69, 0.5)" strokeWidth={0.5} />
+      <rect x={bx} y={by} width={bw} height={bh} rx={3} strokeWidth={0.5}
+        style={{ fill: 'var(--bg-secondary)', stroke: 'var(--border)' }} />
       <foreignObject x={bx} y={by} width={bw} height={HEADER_H}>
         {/* @ts-expect-error xmlns required for foreignObject */}
         <div xmlns="http://www.w3.org/1999/xhtml" className={styles.sectorHeader}>
