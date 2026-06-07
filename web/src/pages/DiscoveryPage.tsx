@@ -243,13 +243,15 @@ function SectorBlock({ sRect, onHover, onSelectTicker }: {
   onHover: (mover: Mover | null, x: number, y: number) => void;
   onSelectTicker: (ticker: string) => void;
 }) {
+  const { locale } = useI18n();
   const { x, y, width, height, sector } = sRect;
   const bx = x + SECTOR_GAP, by = y + SECTOR_GAP;
   const bw = width - SECTOR_GAP * 2, bh = height - SECTOR_GAP * 2;
   if (bw < 20 || bh < 20) return null;
   const innerH = Math.max(0, bh - HEADER_H);
   const headerColor = getSectorHeaderColor(sector.avgChangePct);
-  const label = SECTOR_LABELS[sector.name] ?? sector.name;
+  // Sector names are English keys; localize to ZH only under zh-TW (was always Chinese).
+  const label = locale === 'zh-TW' ? (SECTOR_LABELS[sector.name] ?? sector.name) : sector.name;
   const items = sector.movers.map((m) => ({ value: Math.max(m.volume ?? 1_000_000, 1), data: m }));
   const stockRects = innerH > 10 ? layoutTreemap(items, 0, 0, bw, innerH) : [];
   return (
