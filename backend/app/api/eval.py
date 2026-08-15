@@ -143,6 +143,23 @@ async def eval_agent_run(req: AgentRunRequest):
     return out
 
 
+class ProposeStrategyRequest(BaseModel):
+    ticker: str
+    model: Optional[str] = None
+
+
+@router.post("/propose-strategy")
+async def eval_propose_strategy(req: ProposeStrategyRequest):
+    """AlphaForgeBench (arXiv 2602.18481): the LLM writes a rule-based strategy,
+    validated by the backtest engine IN-SAMPLE and OUT-OF-SAMPLE — only trusted if
+    it generalizes (beats buy-hold on the held-out period). Slow (LLM + 4 backtests)."""
+    from app.eval.strategy_lab import propose_and_validate
+    loop = asyncio.get_event_loop()
+    return await loop.run_in_executor(
+        None, lambda: propose_and_validate(req.ticker.upper(), req.model)
+    )
+
+
 @router.get("/score")
 async def eval_score(label: str):
     loop = asyncio.get_event_loop()

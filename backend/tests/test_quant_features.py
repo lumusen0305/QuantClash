@@ -444,6 +444,17 @@ def test_hist_asof_old_date_regression():
         B.yf = orig
 
 
+def test_extract_code():
+    from app.eval.strategy_lab import extract_code as E
+    fenced = "Here is the strategy:\n```python\nif ctx.rsi() < 30:\n    ctx.buy(1.0)\n```\nDone."
+    check("strips python fence", E(fenced) == "if ctx.rsi() < 30:\n    ctx.buy(1.0)")
+    plain_fence = "```\nctx.sell(1.0)\n```"
+    check("strips bare fence", E(plain_fence) == "ctx.sell(1.0)")
+    raw = "ctx.buy(0.5)"
+    check("passes through raw code", E(raw) == "ctx.buy(0.5)")
+    check("empty -> empty", E("") == "" and E(None) == "")
+
+
 def main():
     for fn in [test_selective_consensus, test_portfolio_builder, test_news_sentiment,
                test_score_decision_alpha, test_reflect_critique, test_style_levels,
@@ -454,7 +465,7 @@ def main():
                test_tally_wins, test_verdict, test_metric_direction, test_action_stability,
                test_confidence_discrimination, test_max_drawdown, test_is_fallback_failure,
                test_cohort_meta, test_score_pipeline_synthetic, test_high_proximity_baseline,
-               test_hist_asof_old_date_regression]:
+               test_hist_asof_old_date_regression, test_extract_code]:
         try:
             fn()
         except Exception as e:
